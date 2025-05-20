@@ -66,6 +66,7 @@ export default class AuthController {
       birthDate: payload.birthDate,
       username: payload.username,
       avatar: user.avatar,
+      novaPoints: 0,
     })
 
     logger.info({ user }, 'User created')

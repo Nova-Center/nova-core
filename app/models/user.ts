@@ -8,6 +8,7 @@ import Post from '#models/post'
 import type { HasMany } from '@adonisjs/lucid/types/relations'
 import { UserRole } from '../types/enums.js'
 import PostComment from '#models/post_comment'
+import PostLike from '#models/post_like'
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
@@ -50,6 +51,10 @@ export default class User extends compose(BaseModel, AuthFinder) {
   // @example(https://example.com/avatar.png)
   declare avatar: string | null
 
+  @column()
+  // @example(155)
+  declare novaPoints: number
+
   @hasMany(() => Post)
   // @no-swagger
   declare posts: HasMany<typeof Post>
@@ -57,6 +62,10 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @hasMany(() => PostComment)
   // @no-swagger
   declare postComments: HasMany<typeof PostComment>
+
+  @hasMany(() => PostLike)
+  // @no-swagger
+  declare postLikes: HasMany<typeof PostLike>
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

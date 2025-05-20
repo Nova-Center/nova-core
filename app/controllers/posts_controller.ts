@@ -6,16 +6,21 @@ import { createPostCommentValidator } from '#validators/create_post_comment'
 import { v4 as uuid } from 'uuid'
 import drive from '@adonisjs/drive/services/main'
 import { readFile } from 'node:fs/promises'
-
+import PostLike from '#models/post_like'
+import CommentLike from '#models/comment_like'
 export default class PostsController {
   /**
    * @index
    * @description Get all posts
    * @requestBody <Post>
-   * @responseBody 200 - <Post[]>.with(relations).exclude(user)
+   * @responseBody 200 - <Post[]>.with(relations, comments.relations).exclude(user, post)
    */
   public async index({ response, logger }: HttpContext) {
-    const posts = await Post.query().preload('comments')
+    const posts = await Post.query()
+      .preload('comments', (commentsQuery) => {
+        commentsQuery.preload('likes')
+      })
+      .preload('likes')
     logger.info(posts)
     return response.json(posts)
   }
@@ -55,20 +60,18 @@ export default class PostsController {
   /**
    * @show
    * @description Get a post by id
-   * @responseBody 200 - <Post>.with(comments)
+   * @responseBody 200 - <Post>.with(relations, comments.relations).exclude(user, post)
    */
   public async show({ request, response }: HttpContext) {
     const { id } = request.params()
-    const post = await Post.find(id)
+    const post = await Post.query()
+      .where('id', id)
+      .preload('comments', (commentsQuery) => {
+        commentsQuery.preload('likes')
+      })
+      .preload('likes')
 
-    const comments = await PostComment.query().where('post_id', id)
-
-    const postWithComments = {
-      ...post,
-      comments,
-    }
-
-    return response.json(postWithComments)
+    return response.json(post)
   }
 
   /**
@@ -96,6 +99,9 @@ export default class PostsController {
     }
 
     await post.delete()
+    await PostLike.query().where('post_id', id).delete()
+    await PostComment.query().where('post_id', id).delete()
+
     return response.json({ message: 'Post deleted' })
   }
 
@@ -105,8 +111,9 @@ export default class PostsController {
    * @description Like a post by id
    * @requestBody <Post>
    * @responseBody 200 - <Post>
+   * @responseBody 400 - { 'message': 'Post already liked' }
    */
-  public async like({ request, response }: HttpContext) {
+  public async like({ auth, request, response }: HttpContext) {
     const { id } = request.params()
     const post = await Post.find(id)
 
@@ -114,8 +121,46 @@ export default class PostsController {
       return response.status(404).json({ message: 'Post not found' })
     }
 
-    post.likes++
+    const user = auth.getUserOrFail()
+
+    const existingLike = await PostLike.findBy({ postId: id, userId: user.id })
+
+    if (existingLike) {
+      return response.status(400).json({ message: 'Post already liked' })
+    }
+
+    await PostLike.create({ postId: id, userId: user.id })
+
     await post.save()
+    return response.json(post)
+  }
+
+  /**
+   * @unlike
+   * @summary Unlike a post by id
+   * @description Unlike a post by id
+   * @requestBody <Post>
+   * @responseBody 200 - <Post>
+   * @responseBody 400 - { 'message': 'Post not liked' }
+   */
+  public async unlike({ auth, request, response }: HttpContext) {
+    const { id } = request.params()
+    const post = await Post.find(id)
+
+    if (!post) {
+      return response.status(404).json({ message: 'Post not found' })
+    }
+
+    const user = auth.getUserOrFail()
+
+    const existingLike = await PostLike.findBy({ postId: id, userId: user.id })
+
+    if (!existingLike) {
+      return response.status(400).json({ message: 'Post not liked' })
+    }
+
+    await existingLike.delete()
+
     return response.json(post)
   }
 
@@ -141,5 +186,92 @@ export default class PostsController {
 
     const comment = await PostComment.create({ content, postId: post.id, userId: auth.user?.id })
     return response.json(comment)
+  }
+
+  /**
+   * @likeComment
+   * @summary Like a comment by id
+   * @description Like a comment by id
+   * @requestBody <Post>
+   * @responseBody 200 - <Post>
+   * @responseBody 400 - { 'message': 'Comment already liked' }
+   */
+  public async likeComment({ auth, request, response, logger }: HttpContext) {
+    const { id, commentId } = request.params()
+
+    logger.info({ id, commentId }, 'Liking comment')
+
+    const post = await Post.find(id)
+
+    if (!post) {
+      return response.status(404).json({ message: 'Post not found' })
+    }
+
+    const comment = await PostComment.find(commentId)
+
+    if (!comment) {
+      return response.status(404).json({ message: 'Comment not found' })
+    }
+
+    const user = auth.getUserOrFail()
+
+    const like = await CommentLike.findBy({ commentId: id, userId: user.id })
+
+    if (like) {
+      await like.delete()
+    }
+
+    await CommentLike.create({ commentId: id, userId: user.id })
+
+    return response.json(comment)
+  }
+
+  /**
+   * @unlikeComment
+   * @summary Unlike a comment by id
+   * @description Unlike a comment by id
+   * @requestBody <Post>
+   * @responseBody 200 - <Post>
+   * @responseBody 400 - { 'message': 'Comment not liked' }
+   */
+  public async unlikeComment({ auth, request, response }: HttpContext) {
+    const { id } = request.params()
+    const comment = await PostComment.find(id)
+
+    if (!comment) {
+      return response.status(404).json({ message: 'Comment not found' })
+    }
+
+    const user = auth.getUserOrFail()
+
+    const like = await CommentLike.findBy({ commentId: id, userId: user.id })
+
+    if (!like) {
+      return response.status(400).json({ message: 'Comment not liked' })
+    }
+
+    await like.delete()
+
+    return response.json(comment)
+  }
+
+  /**
+   * @getComments
+   * @summary Get comments by post id
+   * @description Get comments by post id
+   * @requestBody <Post>
+   * @responseBody 200 - <Post>
+   */
+  public async getComments({ request, response }: HttpContext) {
+    const { id } = request.params()
+    const post = await Post.find(id)
+
+    if (!post) {
+      return response.status(404).json({ message: 'Post not found' })
+    }
+
+    const comments = await PostComment.query().where('post_id', id).preload('likes')
+
+    return response.json(comments)
   }
 }

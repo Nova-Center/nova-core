@@ -68,6 +68,15 @@ router
             router
               .post('/:id/comment', [PostsController, 'comment'])
               .use(middleware.validateNumericId())
+            router
+              .post('/:id/comment/:commentId/like', [PostsController, 'likeComment'])
+              .use(middleware.validateNumericId())
+            router
+              .post('/:id/comment/:commentId/unlike', [PostsController, 'unlikeComment'])
+              .use(middleware.validateNumericId())
+            router
+              .get('/:id/comments', [PostsController, 'getComments'])
+              .use(middleware.validateNumericId())
           })
           .middleware(middleware.auth({ guards: ['api'] }))
           .prefix('/posts')
