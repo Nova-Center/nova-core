@@ -66,16 +66,22 @@ router
             router.delete('/:id', [PostsController, 'destroy']).use(middleware.validateNumericId())
             router.post('/:id/like', [PostsController, 'like']).use(middleware.validateNumericId())
             router
-              .post('/:id/comment', [PostsController, 'comment'])
+              .post('/:id/unlike', [PostsController, 'unlike'])
               .use(middleware.validateNumericId())
             router
-              .post('/:id/comment/:commentId/like', [PostsController, 'likeComment'])
+              .post('/:id/comments', [PostsController, 'comment'])
               .use(middleware.validateNumericId())
             router
-              .post('/:id/comment/:commentId/unlike', [PostsController, 'unlikeComment'])
+              .post('/:id/comments/:commentId/like', [PostsController, 'likeComment'])
+              .use(middleware.validateNumericId())
+            router
+              .post('/:id/comments/:commentId/unlike', [PostsController, 'unlikeComment'])
               .use(middleware.validateNumericId())
             router
               .get('/:id/comments', [PostsController, 'getComments'])
+              .use(middleware.validateNumericId())
+            router
+              .delete('/:id/comments/:commentId', [PostsController, 'deleteComment'])
               .use(middleware.validateNumericId())
           })
           .middleware(middleware.auth({ guards: ['api'] }))

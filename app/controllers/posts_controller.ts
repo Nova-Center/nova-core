@@ -70,6 +70,11 @@ export default class PostsController {
         commentsQuery.preload('likes')
       })
       .preload('likes')
+      .first()
+
+    if (!post) {
+      return response.status(404).json({ message: 'Post not found' })
+    }
 
     return response.json(post)
   }
@@ -156,7 +161,7 @@ export default class PostsController {
     const existingLike = await PostLike.findBy({ postId: id, userId: user.id })
 
     if (!existingLike) {
-      return response.status(400).json({ message: 'Post not liked' })
+      return response.status(400).json({ message: 'Post is not liked' })
     }
 
     await existingLike.delete()
@@ -186,6 +191,31 @@ export default class PostsController {
 
     const comment = await PostComment.create({ content, postId: post.id, userId: auth.user?.id })
     return response.json(comment)
+  }
+
+  /**
+   * @deleteComment
+   * @summary Delete a comment by id
+   * @description Delete a comment by id
+   * @requestBody <Post>
+   * @responseBody 200 - <Post>
+   */
+  public async deleteComment({ auth, request, response }: HttpContext) {
+    const { id, commentId } = request.params()
+
+    const comment = await PostComment.findBy({ id: commentId, postId: id })
+
+    if (!comment) {
+      return response.status(404).json({ message: 'Comment not found' })
+    }
+
+    if (comment.userId !== auth.user?.id) {
+      return response.status(403).json({ message: 'You are not authorized to delete this comment' })
+    }
+
+    await comment.delete()
+
+    return response.json({ message: 'Comment deleted' })
   }
 
   /**
