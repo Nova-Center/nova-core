@@ -20,7 +20,7 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare id: number
 
   @column()
-  // @enum(user, admin)
+  // @enum(user, admin, superadmin)
   declare role: UserRole
 
   @column()

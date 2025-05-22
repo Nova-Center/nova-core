@@ -7,6 +7,7 @@ import { loginValidator } from '#validators/login'
 import drive from '@adonisjs/drive/services/main'
 import { readFile } from 'node:fs/promises'
 import { v4 as uuid } from 'uuid'
+import { UserRole } from '../types/user_role.enum.js'
 
 export default class AuthController {
   /**
@@ -67,6 +68,7 @@ export default class AuthController {
       username: payload.username,
       avatar: user.avatar,
       novaPoints: 0,
+      role: UserRole.USER,
     })
 
     logger.info({ user }, 'User created')

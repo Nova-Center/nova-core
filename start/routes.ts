@@ -11,6 +11,7 @@ import router from '@adonisjs/core/services/router'
 import AutoSwagger from 'adonis-autoswagger'
 import swagger from '#config/swagger'
 import { middleware } from './kernel.js'
+import { UserRole } from '../app/types/user_role.enum.js'
 
 const AuthController = () => import('#controllers/auth_controller')
 const UsersController = () => import('#controllers/users_controller')
@@ -50,9 +51,12 @@ router
         router
           .group(() => {
             // Users routes
-            router.get('/', [UsersController, 'index'])
+            router.get('/', [UsersController, 'index']).use(middleware.role(UserRole.ADMIN))
             router.get('/me', [UsersController, 'me'])
-            router.get('/:id', [UsersController, 'show']).use(middleware.validateNumericId())
+            router
+              .get('/:id', [UsersController, 'show'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
           })
           .middleware(middleware.auth({ guards: ['api'] }))
           .prefix('/users')
