@@ -54,6 +54,7 @@ router
             // Users routes
             router.get('/', [UsersController, 'index']).use(middleware.role(UserRole.ADMIN))
             router.get('/me', [UsersController, 'me'])
+            router.patch('/me', [UsersController, 'updateMe'])
             router
               .get('/:id', [UsersController, 'show'])
               .use(middleware.validateNumericId())

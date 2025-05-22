@@ -155,4 +155,52 @@ export default class UsersController {
     await user.delete()
     return response.json({ message: 'User deleted successfully' })
   }
+
+  /**
+   * @updateMe
+   * @summary Update the current user
+   * @description Update the current user
+   * @requestBody <updateUserValidator>
+   * @responseBody 200 - <User>
+   */
+  public async updateMe({ request, response, auth, logger }: HttpContext) {
+    const user = auth.user
+    if (!user) {
+      return response.unauthorized({ message: 'Not authenticated' })
+    }
+
+    const data = await request.validateUsing(updateUserValidator)
+    const updateData: Partial<User> = {
+      username: data.username,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      birthDate: data.birthDate,
+      email: data.email,
+      password: data.password,
+    }
+
+    if (data.avatar) {
+      if (user.avatar) {
+        const oldAvatarUrl = user.avatar.split('/').pop()
+        await drive.use('s3').delete(`users/${oldAvatarUrl}`)
+        logger.info({ oldAvatarUrl }, 'Old avatar deleted')
+      }
+
+      const fileName = `${uuid()}.${data.avatar.extname}`
+      const fileBuffer = await readFile(data.avatar.tmpPath!)
+      await drive.use('s3').put(`users/${fileName}`, fileBuffer, {
+        contentType: data.avatar.type,
+        visibility: 'public',
+      })
+    }
+
+    user.merge(updateData)
+    await user.save()
+
+    const updatedUser = await User.find(user.id)
+
+    logger.info({ updatedUser }, 'User updated')
+
+    return response.json(updatedUser)
+  }
 }
