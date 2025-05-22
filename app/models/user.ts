@@ -55,6 +55,14 @@ export default class User extends compose(BaseModel, AuthFinder) {
   // @example(155)
   declare novaPoints: number
 
+  @column()
+  // @example(true)
+  declare isBanned: boolean
+
+  @column()
+  // @example(Spamming)
+  declare banReason: string | null
+
   @hasMany(() => Post)
   // @no-swagger
   declare posts: HasMany<typeof Post>

@@ -96,6 +96,14 @@ export default class AuthController {
       return response.unauthorized({ message: 'Invalid credentials' })
     }
 
+    if (user.isBanned) {
+      logger.warn({ userId: user.id }, 'Banned user attempted to login')
+      return response.forbidden({
+        message: 'Your account has been banned',
+        reason: user.banReason,
+      })
+    }
+
     const isPasswordValid = await hash.verify(user.password, password)
     if (!isPasswordValid) {
       logger.warn('Invalid credentials')

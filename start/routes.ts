@@ -16,6 +16,7 @@ import { UserRole } from '../app/types/user_role.enum.js'
 const AuthController = () => import('#controllers/auth_controller')
 const UsersController = () => import('#controllers/users_controller')
 const PostsController = () => import('#controllers/posts_controller')
+const BansController = () => import('#controllers/bans_controller')
 
 router.get('/swagger', async () => {
   return AutoSwagger.default.docs(router.toJSON(), swagger)
@@ -55,6 +56,22 @@ router
             router.get('/me', [UsersController, 'me'])
             router
               .get('/:id', [UsersController, 'show'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
+            router
+              .patch('/:id', [UsersController, 'update'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
+            router
+              .delete('/:id', [UsersController, 'delete'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
+            router
+              .post('/:id/ban', [BansController, 'ban'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
+            router
+              .post('/:id/unban', [BansController, 'unban'])
               .use(middleware.validateNumericId())
               .use(middleware.role(UserRole.ADMIN))
           })

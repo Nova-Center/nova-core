@@ -32,7 +32,7 @@ export default {
       bearerFormat: 'OAT',
     },
   }, // optional
-  authMiddlewares: ['auth', 'auth:api'], // optional
+  authMiddlewares: ['auth', 'auth:api', 'role'], // optional
   defaultSecurityScheme: 'BearerAuth', // optional
   persistAuthorization: true, // persist authorization between reloads on the swagger page
   showFullPath: false, // the path displayed after endpoint summary
