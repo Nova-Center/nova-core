@@ -104,7 +104,16 @@ export default class AuthController {
 
     const token = await auth.use('api').createToken(user)
     logger.info({ token }, 'Login successful')
-    return token
+
+    return {
+      type: token.type,
+      name: token.name,
+      token: token.value!.release(),
+      abilities: token.abilities,
+      lastUsedAt: token.lastUsedAt,
+      expiresAt: token.expiresAt,
+      role: user.role,
+    }
   }
 
   /**
