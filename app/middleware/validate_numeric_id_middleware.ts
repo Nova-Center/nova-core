@@ -3,7 +3,6 @@ import { NextFn } from '@adonisjs/core/types/http'
 
 export default class ValidateNumericIdMiddleware {
   async handle(ctx: HttpContext, next: NextFn) {
-    console.log('Middleware numeric')
     const { id } = ctx.request.params()
 
     if (Number.isNaN(+id)) {

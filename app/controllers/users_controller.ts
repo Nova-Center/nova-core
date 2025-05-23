@@ -64,7 +64,7 @@ export default class UsersController {
    * @requestBody <updateUserValidator>
    * @responseBody 200 - <User>
    */
-  public async update({ request, response, auth, logger }: HttpContext) {
+  public async update({ request, response, logger }: HttpContext) {
     const { id } = request.params()
     const user = await User.find(id)
 
@@ -72,21 +72,22 @@ export default class UsersController {
       return response.notFound({ message: 'User not found' })
     }
 
-    if (user.id !== auth.user?.id && auth.user?.role !== UserRole.ADMIN) {
-      return response.forbidden({ message: 'Not authorized to update this user' })
-    }
+    const data = await request.validateUsing(updateUserValidator)
 
-    if (await User.findBy('email', user.email)) {
+    if (data.email && data.email !== user.email && (await User.findBy('email', data.email))) {
       logger.warn('Email already exists')
       return response.badRequest({ message: 'Email already exists' })
     }
 
-    if (await User.findBy('username', user.username)) {
+    if (
+      data.username &&
+      data.username !== user.username &&
+      (await User.findBy('username', data.username))
+    ) {
       logger.warn('Username already exists')
       return response.badRequest({ message: 'Username already exists' })
     }
 
-    const data = await request.validateUsing(updateUserValidator)
     const updateData: Partial<User> = {
       username: data.username,
       firstName: data.firstName,
@@ -96,7 +97,13 @@ export default class UsersController {
       password: data.password,
     }
 
-    if (data.avatar) {
+    if (data.avatar === null) {
+      if (user.avatar) {
+        const oldAvatarUrl = user.avatar.split('/').pop()
+        await drive.use('s3').delete(`users/${oldAvatarUrl}`)
+      }
+      updateData.avatar = null
+    } else if (data.avatar) {
       if (user.avatar) {
         const oldAvatarUrl = user.avatar.split('/').pop()
         await drive.use('s3').delete(`users/${oldAvatarUrl}`)

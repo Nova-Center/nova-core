@@ -6,10 +6,10 @@ export const updateUserValidator = vine.compile(
     firstName: vine.string().trim().minLength(3).maxLength(20).optional(),
     lastName: vine.string().trim().minLength(3).maxLength(20).optional(),
     birthDate: vine
-      .date({
-        formats: ['YYYY-MM-DD', 'DD-MM-YYYY', 'DD/MM/YYYY', 'DD.MM.YYYY'],
-      })
-      .optional(),
+      .string()
+      .trim()
+      .optional()
+      .transform((value) => (value ? new Date(value) : undefined)),
     email: vine.string().trim().email().optional(),
     password: vine.string().trim().minLength(6).maxLength(20).optional(),
     avatar: vine
