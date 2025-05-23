@@ -1,7 +1,7 @@
 # Nova Core
 
 <div style="display: flex; justify-content: center; margin: 50px 0;">
-  <img src="docs/nova-dash-logo.png" alt="Nova Core Logo" width="200"/>
+  <img src="docs/nova-core-logo.png" alt="Nova Core Logo" width="200"/>
 </div>
 
 A modern, full-featured backend application built with AdonisJS, featuring authentication, file storage, and database management.
