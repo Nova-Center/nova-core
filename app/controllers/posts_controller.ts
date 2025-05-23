@@ -8,20 +8,27 @@ import { readFile } from 'node:fs/promises'
 import PostLike from '#models/post_like'
 import CommentLike from '#models/comment_like'
 import { NovaPointService } from '#services/nova_point_service'
+import { UserRole } from '../types/user_role.enum.js'
 
 export default class PostsController {
   /**
    * @index
-   * @description Get all posts
+   * @description Get all posts with pagination
    * @requestBody <Post>
-   * @responseBody 200 - <Post[]>.with(relations, comments.relations).exclude(user, post)
+   * @responseBody 200 - <Post[]>.with(relations, comments.relations).exclude(user, post).paginated()
    */
-  public async index({ response, logger }: HttpContext) {
+  public async index({ request, response, logger }: HttpContext) {
+    const page = request.input('page', 1)
+    const perPage = request.input('per_page', 10)
+
     const posts = await Post.query()
       .preload('comments', (commentsQuery) => {
         commentsQuery.preload('likes')
       })
       .preload('likes')
+      .orderBy('created_at', 'desc')
+      .paginate(page, perPage)
+
     logger.info(posts)
     return response.json(posts)
   }
@@ -101,7 +108,11 @@ export default class PostsController {
       return response.status(404).json({ message: 'Post not found' })
     }
 
-    if (post.userId !== user.id) {
+    if (
+      post.userId !== user.id &&
+      user.role !== UserRole.ADMIN &&
+      user.role !== UserRole.SUPERADMIN
+    ) {
       return response.status(403).json({ message: 'You are not authorized to delete this post' })
     }
 
@@ -183,6 +194,32 @@ export default class PostsController {
   }
 
   /**
+   * @removeLike
+   * @summary Remove a like from a post by id
+   * @description Remove a like from a post by id
+   * @requestBody <Post>
+   * @responseBody 200 - <Post>
+   */
+  public async removeLike({ request, response }: HttpContext) {
+    const { postId, userId } = request.params()
+    const post = await Post.find(postId)
+
+    if (!post) {
+      return response.status(404).json({ message: 'Post not found' })
+    }
+
+    const like = await PostLike.findBy({ postId: postId, userId: userId })
+
+    if (!like) {
+      return response.status(400).json({ message: 'Post is not liked' })
+    }
+
+    await like.delete()
+
+    return response.json(post)
+  }
+
+  /**
    * @comment
    * @summary Comment on a post by id
    * @description Comment on a post by id
@@ -242,7 +279,11 @@ export default class PostsController {
       return response.status(404).json({ message: 'Comment not found' })
     }
 
-    if (comment.userId !== auth.user?.id) {
+    if (
+      comment.userId !== auth.user?.id &&
+      auth.user?.role !== UserRole.ADMIN &&
+      auth.user?.role !== UserRole.SUPERADMIN
+    ) {
       return response.status(403).json({ message: 'You are not authorized to delete this comment' })
     }
 
@@ -376,5 +417,39 @@ export default class PostsController {
       .orderBy('createdAt', 'desc')
 
     return response.json(likedPosts)
+  }
+
+  /**
+   * @stats
+   * @summary Get post statistics
+   * @description Get various statistics about posts including total counts and most popular posts
+   * @responseBody 200 - { "totalPosts": 5, "totalLikes": 10, "totalComments": 20, "mostLikedPosts": "Post", "mostCommentedPosts": "Post" }
+   */
+  public async stats({ response }: HttpContext) {
+    const totalPosts = await Post.query().count('* as total').first()
+    const totalLikes = await PostLike.query().count('* as total').first()
+    const totalComments = await PostComment.query().count('* as total').first()
+
+    const mostLikedPosts = await Post.query()
+      .withCount('likes')
+      .preload('likes')
+      .preload('comments')
+      .orderBy('likes_count', 'desc')
+      .limit(5)
+
+    const mostCommentedPosts = await Post.query()
+      .withCount('comments')
+      .preload('likes')
+      .preload('comments')
+      .orderBy('comments_count', 'desc')
+      .limit(5)
+
+    return response.json({
+      totalPosts: totalPosts?.$extras.total || 0,
+      totalLikes: totalLikes?.$extras.total || 0,
+      totalComments: totalComments?.$extras.total || 0,
+      mostLikedPosts,
+      mostCommentedPosts,
+    })
   }
 }

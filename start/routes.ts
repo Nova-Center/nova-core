@@ -82,13 +82,21 @@ router
         router
           .group(() => {
             router.get('/', [PostsController, 'index'])
+            router.get('/stats', [PostsController, 'stats']).use(middleware.role(UserRole.ADMIN))
             router.post('/', [PostsController, 'store'])
             router.get('/:id', [PostsController, 'show']).use(middleware.validateNumericId())
-            router.delete('/:id', [PostsController, 'destroy']).use(middleware.validateNumericId())
+            router
+              .delete('/:id', [PostsController, 'destroy'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
             router.post('/:id/like', [PostsController, 'like']).use(middleware.validateNumericId())
             router
               .post('/:id/unlike', [PostsController, 'unlike'])
               .use(middleware.validateNumericId())
+            router
+              .post('/:postId/unlike/:userId', [PostsController, 'removeLike'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
             router
               .post('/:id/comments', [PostsController, 'comment'])
               .use(middleware.validateNumericId())
