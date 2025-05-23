@@ -18,7 +18,7 @@ export default class NovaPointsController {
   }
 
   /**
-   * @history
+   * @historyById
    * @summary Get user's point history by id
    * @description Get the history of points for a user
    * @responseBody 200 - <NovaPoint[]>
