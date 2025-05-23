@@ -1,5 +1,9 @@
 # Nova Core
 
+<div style="display: flex; justify-content: center; margin: 50px 0;">
+  <img src="docs/nova-dash-logo.png" alt="Nova Core Logo" width="200"/>
+</div>
+
 A modern, full-featured backend application built with AdonisJS, featuring authentication, file storage, and database management.
 
 ## 🚀 Features
@@ -99,6 +103,8 @@ API documentation is automatically generated using Swagger. Access it at:
 ```
 http://localhost:3333/docs
 ```
+
+![API Documentation](docs/nova-core-screen.jpeg)
 
 ## 🧪 Testing
 
