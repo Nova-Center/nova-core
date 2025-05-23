@@ -1,6 +1,6 @@
 # Nova Core
 
-<div style="display: flex; justify-content: center; margin: 50px 0;">
+<div align="center">
   <img src="docs/nova-core-logo.png" alt="Nova Core Logo" width="200"/>
 </div>
 
