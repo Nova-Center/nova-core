@@ -4,7 +4,6 @@ import { DateTime } from 'luxon'
 import db from '@adonisjs/lucid/services/db'
 
 export class NovaPointService {
-  // Points constants
   private static readonly POINTS = {
     CREATE_POST: 10,
     CREATE_COMMENT: 5,
@@ -29,7 +28,6 @@ export class NovaPointService {
       description,
     })
 
-    // Update user's total points
     await User.query().where('id', userId).increment('novaPoints', points)
 
     return novaPoint
@@ -51,7 +49,6 @@ export class NovaPointService {
       description,
     })
 
-    // Update user's total points
     await User.query().where('id', userId).increment('novaPoints', points)
 
     return novaPoint
@@ -136,7 +133,6 @@ export class NovaPointService {
       else distribution[4].count++
     })
 
-    // Get points history (last 30 days)
     const thirtyDaysAgo = DateTime.now().minus({ days: 30 }).toSQL()
     const pointsHistory = await NovaPoint.query()
       .select(db.raw('DATE(created_at) as date'))
