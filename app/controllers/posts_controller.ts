@@ -1,13 +1,14 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import Post from '#models/post'
 import PostComment from '#models/post_comment'
-import { createPostValidator } from '#validators/create_post'
 import { createPostCommentValidator } from '#validators/create_post_comment'
 import { v4 as uuid } from 'uuid'
 import drive from '@adonisjs/drive/services/main'
 import { readFile } from 'node:fs/promises'
 import PostLike from '#models/post_like'
 import CommentLike from '#models/comment_like'
+import { NovaPointService } from '#services/nova_point_service'
+
 export default class PostsController {
   /**
    * @index
@@ -32,21 +33,26 @@ export default class PostsController {
    * @responseBody 201 - <Post>
    */
   public async store({ auth, request, response }: HttpContext) {
-    const post = new Post()
     const user = auth.getUserOrFail()
+    const data = request.body()
 
-    const { content, image } = await request.validateUsing(createPostValidator)
-
-    post.fill({
-      content: content,
+    const post = await Post.create({
+      ...data,
       userId: user.id,
     })
 
-    if (image) {
-      const fileName = `${uuid()}.${image.extname}`
-      const fileBuffer = await readFile(image.tmpPath!)
+    // Add points for creating a post
+    await NovaPointService.addPoints(
+      user.id,
+      'CREATE_POST',
+      `Created post: ${post.content.substring(0, 50)}...`
+    )
+
+    if (post.image) {
+      const fileName = `${uuid()}.${post.image.split('.').pop()}`
+      const fileBuffer = await readFile(post.image)
       await drive.use('s3').put(`posts/${fileName}`, fileBuffer, {
-        contentType: image.type,
+        contentType: post.image.split('.').pop(),
         visibility: 'public',
       })
 
@@ -54,7 +60,7 @@ export default class PostsController {
     }
 
     await post.save()
-    return response.json(post)
+    return response.created(post)
   }
 
   /**
@@ -136,6 +142,13 @@ export default class PostsController {
 
     await PostLike.create({ postId: id, userId: user.id })
 
+    // Add points to post author for receiving a like
+    await NovaPointService.addPoints(
+      post.userId,
+      'RECEIVE_LIKE',
+      `Received like on post: ${post.content.substring(0, 50)}...`
+    )
+
     await post.save()
     return response.json(post)
   }
@@ -189,7 +202,27 @@ export default class PostsController {
       return response.status(404).json({ message: 'Post not found' })
     }
 
-    const comment = await PostComment.create({ content, postId: post.id, userId: auth.user?.id })
+    const user = auth.getUserOrFail()
+
+    const comment = await post.related('comments').create({
+      content,
+      userId: user.id,
+    })
+
+    // Add points for creating a comment
+    await NovaPointService.addPoints(
+      user.id,
+      'CREATE_COMMENT',
+      `Commented on post: ${post.content.substring(0, 50)}...`
+    )
+
+    // Add points to post author for receiving a comment
+    await NovaPointService.addPoints(
+      post.userId,
+      'RECEIVE_COMMENT',
+      `Received comment on post: ${post.content.substring(0, 50)}...`
+    )
+
     return response.json(comment)
   }
 
@@ -303,5 +336,45 @@ export default class PostsController {
     const comments = await PostComment.query().where('post_id', id).preload('likes')
 
     return response.json(comments)
+  }
+
+  /**
+   * @myPosts
+   * @summary Get current user's posts
+   * @description Get all posts created by the current user
+   * @responseBody 200 - <Post[]>
+   */
+  public async myPosts({ auth, response }: HttpContext) {
+    const user = auth.getUserOrFail()
+    const posts = await Post.query()
+      .where('userId', user.id)
+      .preload('comments', (commentsQuery) => {
+        commentsQuery.preload('likes')
+      })
+      .preload('likes')
+      .orderBy('createdAt', 'desc')
+
+    return response.json(posts)
+  }
+
+  /**
+   * @myLikes
+   * @summary Get posts liked by current user
+   * @description Get all posts that the current user has liked
+   * @responseBody 200 - <Post[]>
+   */
+  public async myLikes({ auth, response }: HttpContext) {
+    const user = auth.getUserOrFail()
+    const likedPosts = await Post.query()
+      .whereHas('likes', (query) => {
+        query.where('userId', user.id)
+      })
+      .preload('comments', (commentsQuery) => {
+        commentsQuery.preload('likes')
+      })
+      .preload('likes')
+      .orderBy('createdAt', 'desc')
+
+    return response.json(likedPosts)
   }
 }

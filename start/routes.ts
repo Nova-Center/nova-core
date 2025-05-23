@@ -17,6 +17,7 @@ const AuthController = () => import('#controllers/auth_controller')
 const UsersController = () => import('#controllers/users_controller')
 const PostsController = () => import('#controllers/posts_controller')
 const BansController = () => import('#controllers/bans_controller')
+const NovaPointsController = () => import('#controllers/nova_points_controller')
 
 router.get('/swagger', async () => {
   return AutoSwagger.default.docs(router.toJSON(), swagger)
@@ -49,39 +50,36 @@ router
           })
           .prefix('/auth')
 
+        // Me routes - Personal user data
         router
           .group(() => {
-            // Users routes
-            router.get('/', [UsersController, 'index']).use(middleware.role(UserRole.ADMIN))
-            router.get('/me', [UsersController, 'me'])
-            router.patch('/me', [UsersController, 'updateMe'])
-            router
-              .get('/:id', [UsersController, 'show'])
-              .use(middleware.validateNumericId())
-              .use(middleware.role(UserRole.ADMIN))
-            router
-              .patch('/:id', [UsersController, 'update'])
-              .use(middleware.validateNumericId())
-              .use(middleware.role(UserRole.ADMIN))
-            router
-              .delete('/:id', [UsersController, 'delete'])
-              .use(middleware.validateNumericId())
-              .use(middleware.role(UserRole.ADMIN))
-            router
-              .post('/:id/ban', [BansController, 'ban'])
-              .use(middleware.validateNumericId())
-              .use(middleware.role(UserRole.ADMIN))
-            router
-              .post('/:id/unban', [BansController, 'unban'])
-              .use(middleware.validateNumericId())
-              .use(middleware.role(UserRole.ADMIN))
+            router.get('/', [UsersController, 'me'])
+            router.patch('/', [UsersController, 'updateMe'])
+            router.get('/nova-points', [NovaPointsController, 'total'])
+            router.get('/nova-points/history', [NovaPointsController, 'history'])
+            router.get('/posts', [PostsController, 'myPosts'])
+            router.get('/likes', [PostsController, 'myLikes'])
           })
           .middleware(middleware.auth({ guards: ['api'] }))
-          .prefix('/users')
+          .prefix('/me')
 
+        // Users routes - Admin only
         router
           .group(() => {
-            // Posts routes
+            router.get('/', [UsersController, 'index'])
+            router.get('/:id', [UsersController, 'show']).use(middleware.validateNumericId())
+            router.patch('/:id', [UsersController, 'update']).use(middleware.validateNumericId())
+            router.delete('/:id', [UsersController, 'delete']).use(middleware.validateNumericId())
+            router.post('/:id/ban', [BansController, 'ban']).use(middleware.validateNumericId())
+            router.post('/:id/unban', [BansController, 'unban']).use(middleware.validateNumericId())
+          })
+          .middleware(middleware.auth({ guards: ['api'] }))
+          .middleware(middleware.role(UserRole.ADMIN))
+          .prefix('/users')
+
+        // Posts routes
+        router
+          .group(() => {
             router.get('/', [PostsController, 'index'])
             router.post('/', [PostsController, 'store'])
             router.get('/:id', [PostsController, 'show']).use(middleware.validateNumericId())
@@ -108,6 +106,22 @@ router
           })
           .middleware(middleware.auth({ guards: ['api'] }))
           .prefix('/posts')
+
+        // NovaPoints routes
+        router
+          .group(() => {
+            router.get('/leaderboard', [NovaPointsController, 'leaderboard'])
+            router
+              .post('/:id/add', [NovaPointsController, 'addPoints'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
+            router
+              .post('/:id/remove', [NovaPointsController, 'remove'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
+          })
+          .middleware(middleware.auth({ guards: ['api'] }))
+          .prefix('/nova-points')
       })
       .prefix('/v1')
   })
