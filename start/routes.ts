@@ -67,6 +67,7 @@ router
         router
           .group(() => {
             router.get('/', [UsersController, 'index'])
+            router.get('/stats', [UsersController, 'stats'])
             router.get('/:id', [UsersController, 'show']).use(middleware.validateNumericId())
             router.patch('/:id', [UsersController, 'update']).use(middleware.validateNumericId())
             router.delete('/:id', [UsersController, 'delete']).use(middleware.validateNumericId())
@@ -111,6 +112,8 @@ router
         router
           .group(() => {
             router.get('/leaderboard', [NovaPointsController, 'leaderboard'])
+            router.get('/stats', [NovaPointsController, 'stats'])
+            router.get('/history/:id', [NovaPointsController, 'historyById'])
             router
               .post('/:id/add', [NovaPointsController, 'addPoints'])
               .use(middleware.validateNumericId())

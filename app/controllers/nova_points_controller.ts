@@ -18,6 +18,18 @@ export default class NovaPointsController {
   }
 
   /**
+   * @history
+   * @summary Get user's point history by id
+   * @description Get the history of points for a user
+   * @responseBody 200 - <NovaPoint[]>
+   */
+  async historyById({ response, params }: HttpContext) {
+    const { id } = params
+    const history = await NovaPointService.getUserPointHistory(id)
+    return response.ok(history)
+  }
+
+  /**
    * @total
    * @summary Get user's total points
    * @description Get the total points for a user
@@ -83,14 +95,25 @@ export default class NovaPointsController {
       return response.forbidden({ message: 'Only admins can delete points' })
     }
 
-    const { points } = await removeNovaPointsUser.validate(request.body())
+    const { points, description } = await removeNovaPointsUser.validate(request.body())
 
     if (!points) {
       return response.badRequest({ message: 'Points are required' })
     }
 
-    const novaPoints = await NovaPointService.deletePoints(id, points)
+    const novaPoints = await NovaPointService.deletePoints(id, points, description)
 
     return response.ok({ novaPoints })
+  }
+
+  /**
+   * @stats
+   * @summary Get points statistics
+   * @description Get the statistics of points
+   * @responseBody 200 - { "totalPoints": 6677, "averagePoints": 71.42857142857143, "pointsDistribution": [ { "range": "0-100", "count": 6 }, { "range": "101-500", "count": 1 }, { "range": "501-1000", "count": 0 }, { "range": "1001-5000", "count": 0 }, { "range": "5000+", "count": 0 } ], "pointsHistory": [ { "date": "2025-05-23T00:00:00.000Z", "total": 1804 } ] }
+   */
+  async stats({ response }: HttpContext) {
+    const stats = await NovaPointService.getStats()
+    return response.ok(stats)
   }
 }

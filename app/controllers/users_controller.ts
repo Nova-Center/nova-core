@@ -210,4 +210,28 @@ export default class UsersController {
 
     return response.json(updatedUser)
   }
+
+  /**
+   * @stats
+   * @summary Get user statistics
+   * @description Get various statistics about users
+   * @responseBody 200 - { "totalUsers": 10, "usersByRole": { "ADMIN": 1, "USER": 9 } }
+   */
+  public async stats({ response }: HttpContext) {
+    const totalUsers = await User.query().count('* as total').first()
+    const usersByRole = await User.query().select('role').count('* as count').groupBy('role')
+
+    const roleStats = usersByRole.reduce(
+      (acc, curr) => {
+        acc[curr.role] = Number(curr.$extras.count)
+        return acc
+      },
+      {} as Record<UserRole, number>
+    )
+
+    return response.json({
+      totalUsers: Number(totalUsers?.$extras.total || 0),
+      usersByRole: roleStats,
+    })
+  }
 }
