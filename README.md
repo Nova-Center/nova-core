@@ -61,6 +61,12 @@ docker-compose up -d
 node ace migration:run
 ```
 
+6. (Optional) Seed the database with initial data:
+
+```bash
+node ace db:seed
+```
+
 ## 🚀 Development
 
 Start the development server:
