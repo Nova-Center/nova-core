@@ -97,6 +97,7 @@ export default class EventsController {
     }
 
     await event.related('participants').attach([user.id])
+
     return response.ok({ message: 'Successfully subscribed to event' })
   }
 

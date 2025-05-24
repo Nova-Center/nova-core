@@ -78,7 +78,10 @@ export default class User extends compose(BaseModel, AuthFinder) {
   // @no-swagger
   declare postLikes: HasMany<typeof PostLike>
 
-  @manyToMany(() => Event, { pivotTable: 'event_user' })
+  @manyToMany(() => Event, {
+    pivotTable: 'event_participants',
+    pivotTimestamps: true,
+  })
   // @no-swagger
   declare attendingEvents: ManyToMany<typeof Event>
 

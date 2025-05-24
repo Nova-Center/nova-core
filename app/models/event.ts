@@ -33,6 +33,7 @@ export default class Event extends BaseModel {
 
   @manyToMany(() => User, {
     pivotTable: 'event_participants',
+    pivotTimestamps: true,
   })
   declare participants: ManyToMany<typeof User>
 
