@@ -3,6 +3,7 @@ import Event from '#models/event'
 import { UserRole } from '../types/user_role.enum.js'
 import { createEventValidator } from '#validators/event'
 import { DateTime } from 'luxon'
+import User from '#models/user'
 
 export default class EventsController {
   /**
@@ -118,5 +119,103 @@ export default class EventsController {
 
     await event.related('participants').detach([user.id])
     return response.ok({ message: 'Successfully unsubscribed from event' })
+  }
+
+  /**
+   * @unsubscribeByAdmin
+   * @summary Unsubscribe from event by admin
+   * @description Unsubscribe from event by admin
+   * @responseBody 200 - { "message": "Successfully unsubscribed from event" }
+   */
+  async unsubscribeByAdmin({ params, response }: HttpContext) {
+    const { eventId, userId } = params
+    const event = await Event.findBy('id', eventId)
+
+    if (!event) {
+      return response.notFound({ message: 'Event not found' })
+    }
+
+    const user = await User.findBy('id', userId)
+    if (!user) {
+      return response.notFound({ message: 'User not found' })
+    }
+
+    // Check if user is subscribed to event
+    const isSubscribed = await event
+      .related('participants')
+      .query()
+      .where('users.id', user.id)
+      .first()
+    if (!isSubscribed) {
+      return response.badRequest({ message: 'User is not subscribed to this event' })
+    }
+
+    await event?.related('participants').detach([user.id])
+    return response.ok({ message: 'Successfully unsubscribed from event' })
+  }
+
+  /**
+   * @stats
+   * @summary Get event statistics
+   * @description Get comprehensive statistics about events
+   * @responseBody 200 - {
+   *   totalEvents: number,
+   *   averageParticipants: number,
+   *   mostPopularEvents: Array<{id: number, title: string, participantCount: number}>,
+   *   eventsByMonth: Array<{month: string, count: number}>,
+   *   totalParticipants: number
+   * }
+   */
+  async stats({ response }: HttpContext) {
+    const totalEvents = await Event.query().count('* as total')
+
+    const eventsWithParticipants = await Event.query()
+      .preload('participants')
+      .orderBy('created_at', 'desc')
+
+    const avgParticipants =
+      eventsWithParticipants.reduce((acc, event) => {
+        return acc + event.participants.length
+      }, 0) / (eventsWithParticipants.length || 1)
+
+    const mostPopularEvents = await Event.query()
+      .preload('participants')
+      .orderBy('created_at', 'desc')
+      .then((events) =>
+        events
+          .map((event) => ({
+            id: event.id,
+            title: event.title,
+            participantCount: event.participants.length,
+          }))
+          .sort((a, b) => b.participantCount - a.participantCount)
+          .slice(0, 5)
+      )
+
+    const eventsByMonth = await Event.query()
+      .select('created_at')
+      .orderBy('created_at', 'desc')
+      .then((events) => {
+        const months = new Map()
+        events.forEach((event) => {
+          const month = event.createdAt.toFormat('yyyy-MM')
+          months.set(month, (months.get(month) || 0) + 1)
+        })
+        return Array.from(months.entries())
+          .map(([month, count]) => ({ month, count }))
+          .slice(0, 12)
+      })
+
+    const totalParticipants = eventsWithParticipants.reduce((acc, event) => {
+      return acc + event.participants.length
+    }, 0)
+
+    return response.ok({
+      totalEvents: totalEvents[0].$extras.total,
+      averageParticipants: Math.round(avgParticipants),
+      mostPopularEvents,
+      eventsByMonth,
+      totalParticipants,
+    })
   }
 }

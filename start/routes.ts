@@ -139,11 +139,20 @@ router
         router
           .group(() => {
             router.get('/', [EventsController, 'index'])
-            router.get('/:id', [EventsController, 'show'])
+            router.get('/stats', [EventsController, 'stats'])
+            router.get('/:id', [EventsController, 'show']).use(middleware.validateNumericId())
             router.post('/', [EventsController, 'store'])
-            router.delete('/:id', [EventsController, 'destroy'])
-            router.post('/:id/subscribe', [EventsController, 'subscribe'])
-            router.post('/:id/unsubscribe', [EventsController, 'unsubscribe'])
+            router.delete('/:id', [EventsController, 'destroy']).use(middleware.validateNumericId())
+            router
+              .post('/:id/subscribe', [EventsController, 'subscribe'])
+              .use(middleware.validateNumericId())
+            router
+              .post('/:id/unsubscribe', [EventsController, 'unsubscribe'])
+              .use(middleware.validateNumericId())
+            router
+              .post('/:eventId/unsubscribe/:userId', [EventsController, 'unsubscribeByAdmin'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
           })
           .middleware(middleware.auth({ guards: ['api'] }))
           .prefix('/events')
