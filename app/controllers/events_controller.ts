@@ -1,9 +1,12 @@
+import { v4 as uuid } from 'uuid'
 import { HttpContext } from '@adonisjs/core/http'
 import Event from '#models/event'
 import { UserRole } from '../types/user_role.enum.js'
 import { createEventValidator } from '#validators/event'
 import { DateTime } from 'luxon'
 import User from '#models/user'
+import { readFile } from 'node:fs/promises'
+import drive from '@adonisjs/drive/services/main'
 
 export default class EventsController {
   /**
@@ -45,11 +48,34 @@ export default class EventsController {
    */
   async store({ request, response, auth }: HttpContext) {
     const data = await request.validateUsing(createEventValidator)
-    const event = await Event.create({
+
+    if (!data.image) {
+      return response.badRequest({ message: 'Image is required' })
+    }
+
+    const event = new Event()
+
+    const fileName = `${uuid()}.${data.image.clientName.split('.').pop()}`
+
+    if (!data.image.tmpPath) {
+      throw new Error('Temporary file path is missing')
+    }
+    const fileBuffer = await readFile(data.image.tmpPath)
+
+    await drive.use('s3').put(`events/${fileName}`, fileBuffer, {
+      contentType: data.image.clientName.split('.').pop(),
+      visibility: 'public',
+    })
+
+    event.fill({
       ...data,
+      image: await drive.use('s3').getUrl(`events/${fileName}`),
       date: DateTime.fromJSDate(data.date),
       userId: auth.user!.id,
     })
+
+    await event.save()
+
     return response.created(event)
   }
 
