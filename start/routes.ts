@@ -18,6 +18,7 @@ const UsersController = () => import('#controllers/users_controller')
 const PostsController = () => import('#controllers/posts_controller')
 const BansController = () => import('#controllers/bans_controller')
 const NovaPointsController = () => import('#controllers/nova_points_controller')
+const EventsController = () => import('#controllers/events_controller')
 
 router.get('/swagger', async () => {
   return AutoSwagger.default.docs(router.toJSON(), swagger)
@@ -133,6 +134,19 @@ router
           })
           .middleware(middleware.auth({ guards: ['api'] }))
           .prefix('/nova-points')
+
+        // Events routes
+        router
+          .group(() => {
+            router.get('/', [EventsController, 'index'])
+            router.get('/:id', [EventsController, 'show'])
+            router.post('/', [EventsController, 'store'])
+            router.delete('/:id', [EventsController, 'destroy'])
+            router.post('/:id/subscribe', [EventsController, 'subscribe'])
+            router.post('/:id/unsubscribe', [EventsController, 'unsubscribe'])
+          })
+          .middleware(middleware.auth({ guards: ['api'] }))
+          .prefix('/events')
       })
       .prefix('/v1')
   })

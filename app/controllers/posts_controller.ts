@@ -14,6 +14,8 @@ export default class PostsController {
   /**
    * @index
    * @description Get all posts with pagination
+   * @paramQuery page - The page number - @type(number)
+   * @paramQuery per_page - The number of posts per page - @type(number)
    * @requestBody <Post>
    * @responseBody 200 - <Post[]>.with(relations, comments.relations).exclude(user, post).paginated()
    */

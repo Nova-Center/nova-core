@@ -1,8 +1,7 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column, belongsTo, manyToMany } from '@adonisjs/lucid/orm'
-import type { BelongsTo, ManyToMany } from '@adonisjs/lucid/types/relations'
+import { BaseModel, column, manyToMany, belongsTo } from '@adonisjs/lucid/orm'
+import type { ManyToMany, BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
-import { EventStatus } from '../types/event_status.enum.js'
 
 export default class Event extends BaseModel {
   @column({ isPrimary: true })
@@ -14,32 +13,28 @@ export default class Event extends BaseModel {
   @belongsTo(() => User)
   declare user: BelongsTo<typeof User>
 
-  @manyToMany(() => User, { pivotTable: 'event_user' })
-  declare attendees: ManyToMany<typeof User>
-
   @column()
-  declare name: string
-
-  @column()
-  declare description: string
+  declare title: string
 
   @column()
   declare image: string
 
   @column()
+  declare description: string
+
+  @column()
+  declare maxParticipants: number
+
+  @column()
   declare location: string
 
-  @column()
+  @column.dateTime()
   declare date: DateTime
 
-  @column()
-  declare price: number
-
-  @column()
-  declare capacity: number
-
-  @column()
-  declare status: EventStatus
+  @manyToMany(() => User, {
+    pivotTable: 'event_participants',
+  })
+  declare participants: ManyToMany<typeof User>
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
