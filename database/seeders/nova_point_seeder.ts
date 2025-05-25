@@ -19,5 +19,7 @@ export default class extends BaseSeeder {
         })
       }
     }
+
+    console.log('Nova points seeded successfully ! 💰')
   }
 }

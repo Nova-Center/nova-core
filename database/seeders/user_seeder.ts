@@ -331,5 +331,7 @@ export default class extends BaseSeeder {
         avatar: null,
       },
     ])
+
+    console.log('Users seeded successfully ! 🧑‍🤝‍🧑')
   }
 }

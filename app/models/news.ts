@@ -16,7 +16,10 @@ export default class News extends BaseModel {
   @column()
   declare excerpt: string
 
-  @column()
+  @column({
+    serialize: (value: string[]) => value,
+    prepare: (value: string[]) => JSON.stringify(value),
+  })
   declare tags: string[]
 
   @column()
