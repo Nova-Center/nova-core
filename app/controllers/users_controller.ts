@@ -160,7 +160,7 @@ export default class UsersController {
     }
 
     await user.delete()
-    return response.json({ message: 'User deleted successfully' })
+    return response.status(204)
   }
 
   /**

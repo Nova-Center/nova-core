@@ -10,6 +10,7 @@ export class NovaPointService {
     RECEIVE_LIKE: 2,
     RECEIVE_COMMENT: 3,
     DAILY_LOGIN: 1,
+    CREATE_EVENT: 10,
   }
 
   /**

@@ -7,6 +7,7 @@ import { DateTime } from 'luxon'
 import User from '#models/user'
 import { readFile } from 'node:fs/promises'
 import drive from '@adonisjs/drive/services/main'
+import { NovaPointService } from '#services/nova_point_service'
 
 export default class EventsController {
   /**
@@ -73,6 +74,8 @@ export default class EventsController {
       date: DateTime.fromJSDate(data.date),
       userId: auth.user!.id,
     })
+
+    await NovaPointService.addPoints(auth.user!.id, 'CREATE_EVENT', `Created event: ${event.title}`)
 
     await event.save()
 
