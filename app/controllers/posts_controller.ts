@@ -24,6 +24,7 @@ export default class PostsController {
     const perPage = request.input('per_page', 10)
 
     const posts = await Post.query()
+      .preload('user')
       .preload('comments', (commentsQuery) => {
         commentsQuery.preload('likes')
       })
