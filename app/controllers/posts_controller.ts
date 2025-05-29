@@ -42,36 +42,42 @@ export default class PostsController {
    * @requestBody <createPostValidator>
    * @responseBody 201 - <Post>
    */
-  public async store({ auth, request, response }: HttpContext) {
-    const user = auth.getUserOrFail()
-    const data = request.body()
+public async store({ auth, request, response }: HttpContext) {
+  const user = await auth.getUserOrFail()
 
-    const post = await Post.create({
-      ...data,
-      userId: user.id,
+  // Récupération du texte et du fichier
+  const caption = request.input('content')
+  const imageFile = request.file('image')
+
+  // Création du post
+  const post = new Post()
+  post.userId = user.id
+  post.content = caption
+
+  if (imageFile) {
+    const fileName = `${uuid()}.${imageFile.extname}`
+    const buffer = await readFile(imageFile.tmpPath!)
+
+    await drive.use('s3').put(`posts/${fileName}`, buffer, {
+      contentType: imageFile.type,
+      visibility: 'public',
     })
 
-    // Add points for creating a post
-    await NovaPointService.addPoints(
-      user.id,
-      'CREATE_POST',
-      `Created post: ${post.content.substring(0, 50)}...`
-    )
-
-    if (post.image) {
-      const fileName = `${uuid()}.${post.image.split('.').pop()}`
-      const fileBuffer = await readFile(post.image)
-      await drive.use('s3').put(`posts/${fileName}`, fileBuffer, {
-        contentType: post.image.split('.').pop(),
-        visibility: 'public',
-      })
-
-      post.image = await drive.use('s3').getUrl(`posts/${fileName}`)
-    }
-
-    await post.save()
-    return response.created(post)
+    post.image = await drive.use('s3').getUrl(`posts/${fileName}`)
   }
+
+  await post.save()
+
+  // Points bonus
+  await NovaPointService.addPoints(
+    user.id,
+    'CREATE_POST',
+    `Created post: ${caption.substring(0, 50)}...`
+  )
+
+  return response.created(post)
+}
+
 
   /**
    * @show
