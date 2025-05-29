@@ -83,7 +83,9 @@ export default class PostsController {
     const post = await Post.query()
       .where('id', id)
       .preload('comments', (commentsQuery) => {
-        commentsQuery.preload('likes')
+        commentsQuery
+        .preload('likes')
+        .preload('user')
       })
       .preload('likes')
       .first()
