@@ -63,9 +63,6 @@ export default class User extends compose(BaseModel, AuthFinder) {
   // @example(Spamming)
   declare banReason: string | null
 
-  @column()
-  declare totalPoints: number
-
   @hasMany(() => Post)
   // @no-swagger
   declare posts: HasMany<typeof Post>

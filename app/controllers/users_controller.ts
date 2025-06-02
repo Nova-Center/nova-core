@@ -5,17 +5,50 @@ import { readFile } from 'node:fs/promises'
 import { v4 as uuid } from 'uuid'
 import drive from '@adonisjs/drive/services/main'
 import { UserRole } from '../types/user_role.enum.js'
+import db from '@adonisjs/lucid/services/db'
 
 export default class UsersController {
   /**
    * @index
-   * @description Get all users
-   * @requestBody <User>
-   * @responseBody 200 - <User>
+   * @description Get all users for admin
+   * @responseBody 200 - <User[]>
    */
   public async index({ auth, request, response, logger }: HttpContext) {
     const { page, perPage } = request.only(['page', 'perPage'])
-    const users = await User.query().paginate(page, perPage)
+
+    const users = await User.query()
+      .select('id', 'username', 'first_name', 'last_name', 'email', 'role')
+      .paginate(page, perPage)
+
+    logger.info({ auth: auth.user?.username }, 'Users fetched by')
+    return response.json(users)
+  }
+
+  /**
+   * @getUsers
+   * @summary Get all users
+   * @description Get all users
+   * @responseBody 200 - <User[]>.only(id, username, first_name, last_name, email, role, created_at, avatar, nova_points, is_banned)
+   */
+  public async getUsers({ auth, request, response, logger }: HttpContext) {
+    const { page, perPage } = request.only(['page', 'perPage'])
+
+    const users = await db
+      .from('users')
+      .select(
+        'id',
+        'username',
+        'first_name',
+        'last_name',
+        'email',
+        'role',
+        'created_at',
+        'avatar',
+        'nova_points',
+        'is_banned'
+      )
+      .paginate(page, perPage)
+
     logger.info({ auth: auth.user?.username }, 'Users fetched by')
     return response.json(users)
   }

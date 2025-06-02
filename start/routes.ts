@@ -68,16 +68,28 @@ router
         // Users routes - Admin only
         router
           .group(() => {
-            router.get('/', [UsersController, 'index'])
-            router.get('/stats', [UsersController, 'stats'])
+            router.get('/', [UsersController, 'index']).use(middleware.role(UserRole.ADMIN))
+            router.get('/all', [UsersController, 'getUsers'])
+            router.get('/stats', [UsersController, 'stats']).use(middleware.role(UserRole.ADMIN))
             router.get('/:id', [UsersController, 'show']).use(middleware.validateNumericId())
-            router.patch('/:id', [UsersController, 'update']).use(middleware.validateNumericId())
-            router.delete('/:id', [UsersController, 'delete']).use(middleware.validateNumericId())
-            router.post('/:id/ban', [BansController, 'ban']).use(middleware.validateNumericId())
-            router.post('/:id/unban', [BansController, 'unban']).use(middleware.validateNumericId())
+            router
+              .patch('/:id', [UsersController, 'update'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
+            router
+              .delete('/:id', [UsersController, 'delete'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
+            router
+              .post('/:id/ban', [BansController, 'ban'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
+            router
+              .post('/:id/unban', [BansController, 'unban'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
           })
           .middleware(middleware.auth({ guards: ['api'] }))
-          .middleware(middleware.role(UserRole.ADMIN))
           .prefix('/users')
 
         // Posts routes
