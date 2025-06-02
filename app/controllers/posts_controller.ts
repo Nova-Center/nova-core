@@ -42,42 +42,41 @@ export default class PostsController {
    * @requestBody <createPostValidator>
    * @responseBody 201 - <Post>
    */
-public async store({ auth, request, response }: HttpContext) {
-  const user = await auth.getUserOrFail()
+  public async store({ auth, request, response }: HttpContext) {
+    const user = await auth.getUserOrFail()
 
-  // Récupération du texte et du fichier
-  const caption = request.input('content')
-  const imageFile = request.file('image')
+    // Récupération du texte et du fichier
+    const caption = request.input('content')
+    const imageFile = request.file('image')
 
-  // Création du post
-  const post = new Post()
-  post.userId = user.id
-  post.content = caption
+    // Création du post
+    const post = new Post()
+    post.userId = user.id
+    post.content = caption
 
-  if (imageFile) {
-    const fileName = `${uuid()}.${imageFile.extname}`
-    const buffer = await readFile(imageFile.tmpPath!)
+    if (imageFile) {
+      const fileName = `${uuid()}.${imageFile.extname}`
+      const buffer = await readFile(imageFile.tmpPath!)
 
-    await drive.use('s3').put(`posts/${fileName}`, buffer, {
-      contentType: imageFile.type,
-      visibility: 'public',
-    })
+      await drive.use('s3').put(`posts/${fileName}`, buffer, {
+        contentType: imageFile.type,
+        visibility: 'public',
+      })
 
-    post.image = await drive.use('s3').getUrl(`posts/${fileName}`)
+      post.image = await drive.use('s3').getUrl(`posts/${fileName}`)
+    }
+
+    await post.save()
+
+    // Points bonus
+    await NovaPointService.addPoints(
+      user.id,
+      'CREATE_POST',
+      `Created post: ${caption.substring(0, 50)}...`
+    )
+
+    return response.created(post)
   }
-
-  await post.save()
-
-  // Points bonus
-  await NovaPointService.addPoints(
-    user.id,
-    'CREATE_POST',
-    `Created post: ${caption.substring(0, 50)}...`
-  )
-
-  return response.created(post)
-}
-
 
   /**
    * @show
@@ -89,9 +88,7 @@ public async store({ auth, request, response }: HttpContext) {
     const post = await Post.query()
       .where('id', id)
       .preload('comments', (commentsQuery) => {
-        commentsQuery
-        .preload('likes')
-        .preload('user')
+        commentsQuery.preload('likes').preload('user')
       })
       .preload('likes')
       .first()
