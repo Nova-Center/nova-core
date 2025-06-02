@@ -16,9 +16,7 @@ export default class UsersController {
   public async index({ auth, request, response, logger }: HttpContext) {
     const { page, perPage } = request.only(['page', 'perPage'])
 
-    const users = await User.query()
-      .select('id', 'username', 'first_name', 'last_name', 'email', 'role')
-      .paginate(page, perPage)
+    const users = await User.query().paginate(page, perPage)
 
     logger.info({ auth: auth.user?.username }, 'Users fetched by')
     return response.json(users)
@@ -45,7 +43,9 @@ export default class UsersController {
         'created_at',
         'avatar',
         'nova_points',
-        'is_banned'
+        'is_banned',
+        'is_online',
+        'last_seen_at'
       )
       .paginate(page, perPage)
 
@@ -72,7 +72,11 @@ export default class UsersController {
       return response.notFound({ message: 'User not found' })
     }
 
-    return response.json(user)
+    return response.json({
+      ...user.serialize(),
+      isOnline: user.isOnline,
+      lastSeenAt: user.lastSeenAt,
+    })
   }
 
   /**

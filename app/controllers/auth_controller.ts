@@ -18,56 +18,55 @@ export default class AuthController {
    * @responseBody 201 - <User>
    * @responseBody 400 - Email already exists
    */
-public async store({ request, response, logger }: HttpContext) {
-  //  Utilise bien validateUsing pour VineJS
-  const payload = await request.validateUsing(createAuthValidator)
+  public async store({ request, response, logger }: HttpContext) {
+    //  Utilise bien validateUsing pour VineJS
+    const payload = await request.validateUsing(createAuthValidator)
 
-  logger.info({ payload }, 'Trying to create user')
+    logger.info({ payload }, 'Trying to create user')
 
-  if (await User.findBy('email', payload.email)) {
-    logger.warn('Email already exists')
-    return response.badRequest({ message: 'Email already exists' })
-  }
+    if (await User.findBy('email', payload.email)) {
+      logger.warn('Email already exists')
+      return response.badRequest({ message: 'Email already exists' })
+    }
 
-  if (await User.findBy('username', payload.username)) {
-    logger.warn('Username already exists')
-    return response.badRequest({ message: 'Username already exists' })
-  }
+    if (await User.findBy('username', payload.username)) {
+      logger.warn('Username already exists')
+      return response.badRequest({ message: 'Username already exists' })
+    }
 
-  const user = new User()
+    const user = new User()
 
-  if (payload.avatar) {
-    const fileName = `${uuid()}.${payload.avatar.extname}`
-    const fileBuffer = await readFile(payload.avatar.tmpPath!)
-    await drive.use('s3').put(`users/${fileName}`, fileBuffer, {
-      contentType: payload.avatar.type,
-      visibility: 'public',
+    if (payload.avatar) {
+      const fileName = `${uuid()}.${payload.avatar.extname}`
+      const fileBuffer = await readFile(payload.avatar.tmpPath!)
+      await drive.use('s3').put(`users/${fileName}`, fileBuffer, {
+        contentType: payload.avatar.type,
+        visibility: 'public',
+      })
+
+      user.avatar = await drive.use('s3').getUrl(`users/${fileName}`)
+      logger.info({ avatar: user.avatar }, 'Avatar uploaded')
+    } else {
+      user.avatar = null
+    }
+
+    user.fill({
+      email: payload.email,
+      password: payload.password,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      birthDate: payload.birthDate,
+      username: payload.username,
+      avatar: user.avatar,
+      novaPoints: 0,
+      role: UserRole.USER,
     })
 
-    user.avatar = await drive.use('s3').getUrl(`users/${fileName}`)
-    logger.info({ avatar: user.avatar }, 'Avatar uploaded')
-  } else {
-    user.avatar = null
+    logger.info({ user }, 'User created')
+
+    await user.save()
+    return response.created(user)
   }
-
-  user.fill({
-    email: payload.email,
-    password: payload.password,
-    firstName: payload.firstName,
-    lastName: payload.lastName,
-    birthDate: payload.birthDate,
-    username: payload.username,
-    avatar: user.avatar,
-    novaPoints: 0,
-    role: UserRole.USER,
-  })
-
-  logger.info({ user }, 'User created')
-
-  await user.save()
-  return response.created(user)
-}
-
 
   /**
    * @login

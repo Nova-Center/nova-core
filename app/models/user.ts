@@ -63,6 +63,14 @@ export default class User extends compose(BaseModel, AuthFinder) {
   // @example(Spamming)
   declare banReason: string | null
 
+  @column()
+  // @example(true)
+  declare isOnline: boolean
+
+  @column.dateTime()
+  // @example(2024-03-20T15:30:00Z)
+  declare lastSeenAt: DateTime | null
+
   @hasMany(() => Post)
   // @no-swagger
   declare posts: HasMany<typeof Post>
