@@ -43,7 +43,11 @@ export default class PostsController {
    * @responseBody 201 - <Post>
    */
   public async store({ auth, request, response }: HttpContext) {
-    const user = await auth.getUserOrFail()
+    const user = auth.user
+
+    if (!user) {
+      return response.unauthorized()
+    }
 
     // Récupération du texte et du fichier
     const caption = request.input('content')

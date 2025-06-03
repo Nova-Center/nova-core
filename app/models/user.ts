@@ -10,6 +10,7 @@ import { UserRole } from '../types/user_role.enum.js'
 import PostComment from '#models/post_comment'
 import PostLike from '#models/post_like'
 import Event from '#models/event'
+import Service from './service.js'
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
   passwordColumnName: 'password',
@@ -82,6 +83,18 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @hasMany(() => PostLike)
   // @no-swagger
   declare postLikes: HasMany<typeof PostLike>
+
+  @hasMany(() => Service, {
+    foreignKey: 'ownerId',
+  })
+  // @no-swagger
+  declare services: HasMany<typeof Service>
+
+  @hasMany(() => Service, {
+    foreignKey: 'volunteerId',
+  })
+  // @no-swagger
+  declare volunteeredServices: HasMany<typeof Service>
 
   @manyToMany(() => Event, {
     pivotTable: 'event_participants',

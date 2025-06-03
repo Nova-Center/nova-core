@@ -10,5 +10,6 @@ export default class extends BaseSeeder {
     await this.seed(await import('#database/seeders/nova_point_seeder'))
     await this.seed(await import('#database/seeders/event_seeder'))
     await this.seed(await import('#database/seeders/news_seeder'))
+    await this.seed(await import('#database/seeders/service_seeder'))
   }
 }
