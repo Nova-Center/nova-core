@@ -6,7 +6,7 @@ export const createShopItemValidator = vine.compile(
     description: vine.string().minLength(10).maxLength(255),
     price: vine.number().min(0),
     image: vine.file({
-      size: 1024 * 1024 * 5, // 5MB
+      size: '5mb',
       extnames: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
     }),
   })
@@ -21,7 +21,7 @@ export const updateShopItemValidator = vine.compile(
     price: vine.number().min(0).optional(),
     image: vine
       .file({
-        size: 1024 * 1024 * 5, // 5MB
+        size: '5mb',
         extnames: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
       })
       .optional(),

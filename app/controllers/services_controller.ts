@@ -2,6 +2,7 @@ import Service from '#models/service'
 import { createServiceValidator } from '#validators/service'
 import type { HttpContext } from '@adonisjs/core/http'
 import { UserRole } from '../types/user_role.enum.js'
+import { NovaPointService } from '#services/nova_point_service'
 
 export default class ServicesController {
   /**
@@ -14,12 +15,12 @@ export default class ServicesController {
     const user = auth.user
 
     if (!user) {
-      return response.unauthorized()
+      return response.unauthorized({
+        message: 'Unauthorized',
+      })
     }
 
-    const { title, description, date } = await createServiceValidator.validate(
-      request.only(['title', 'description', 'date'])
-    )
+    const { title, description, date } = await request.validateUsing(createServiceValidator)
 
     const service = await Service.create({
       title,
@@ -57,7 +58,9 @@ export default class ServicesController {
     const service = await Service.find(id)
 
     if (!service) {
-      return response.notFound()
+      return response.notFound({
+        message: 'Service not found',
+      })
     }
 
     return response.json(service)
@@ -80,7 +83,9 @@ export default class ServicesController {
     const service = await Service.find(id)
 
     if (!service) {
-      return response.notFound()
+      return response.notFound({
+        message: 'Service not found',
+      })
     }
 
     if (
@@ -107,13 +112,17 @@ export default class ServicesController {
     const user = auth.user
 
     if (!user) {
-      return response.unauthorized()
+      return response.unauthorized({
+        message: 'Unauthorized',
+      })
     }
 
     const service = await Service.find(id)
 
     if (!service) {
-      return response.notFound()
+      return response.notFound({
+        message: 'Service not found',
+      })
     }
 
     if (service.volunteerId) {
@@ -123,6 +132,8 @@ export default class ServicesController {
     if (service.ownerId === user.id) {
       return response.badRequest({ message: 'You cannot volunteer for your own service' })
     }
+
+    NovaPointService.addPoints(user.id, 'VOLUNTEER_SERVICE', 'Volunteered for a service')
 
     service.volunteerId = user.id
     await service.save()
@@ -141,13 +152,17 @@ export default class ServicesController {
     const user = auth.user
 
     if (!user) {
-      return response.unauthorized()
+      return response.unauthorized({
+        message: 'Unauthorized',
+      })
     }
 
     const service = await Service.find(id)
 
     if (!service) {
-      return response.notFound()
+      return response.notFound({
+        message: 'Service not found',
+      })
     }
 
     if (service.volunteerId !== user.id) {

@@ -5,6 +5,7 @@ import drive from '@adonisjs/drive/services/main'
 import { v4 as uuid } from 'uuid'
 import { readFile } from 'node:fs/promises'
 import { DateTime } from 'luxon'
+import { NovaPointService } from '#services/nova_point_service'
 
 export default class ShopItemsController {
   /**
@@ -14,13 +15,13 @@ export default class ShopItemsController {
    * @responseBody 201 - <ShopItem>
    */
   public async store({ request, response, auth }: HttpContext) {
-    const { name, description, price, image } = await createShopItemValidator.validate(
-      request.body()
-    )
+    const { name, description, price, image } = await request.validateUsing(createShopItemValidator)
     const user = auth.user
 
     if (!user) {
-      return response.unauthorized()
+      return response.unauthorized({
+        message: 'Unauthorized',
+      })
     }
 
     const fileName = `${uuid()}.${image.extname}`
@@ -54,10 +55,7 @@ export default class ShopItemsController {
   public async index({ request, response }: HttpContext) {
     const { page, perPage } = request.only(['page', 'perPage'])
 
-    const shopItems = await ShopItem.query()
-      .preload('owner')
-      .preload('client')
-      .paginate(page, perPage)
+    const shopItems = await ShopItem.query().paginate(page, perPage)
 
     return response.json(shopItems)
   }
@@ -73,7 +71,9 @@ export default class ShopItemsController {
     const shopItem = await ShopItem.find(id)
 
     if (!shopItem) {
-      return response.notFound()
+      return response.notFound({
+        message: 'Shop item not found',
+      })
     }
 
     return response.json(shopItem)
@@ -90,7 +90,15 @@ export default class ShopItemsController {
     const shopItem = await ShopItem.find(id)
 
     if (!shopItem) {
-      return response.notFound()
+      return response.notFound({
+        message: 'Shop item not found',
+      })
+    }
+
+    if (shopItem.clientId) {
+      return response.badRequest({
+        message: 'Shop item already purchased',
+      })
     }
 
     if (shopItem.image) {
@@ -110,12 +118,20 @@ export default class ShopItemsController {
    */
   public async update({ request, response }: HttpContext) {
     const { id } = request.params()
-    const newItem = await updateShopItemValidator.validate(request.body())
+    const newItem = await request.validateUsing(updateShopItemValidator)
 
     const shopItem = await ShopItem.find(id)
 
     if (!shopItem) {
-      return response.notFound()
+      return response.notFound({
+        message: 'Shop item not found',
+      })
+    }
+
+    if (shopItem.clientId) {
+      return response.badRequest({
+        message: 'Shop item already purchased',
+      })
     }
 
     if (newItem.image) {
@@ -159,18 +175,32 @@ export default class ShopItemsController {
     const user = auth.user
 
     if (!user) {
-      return response.unauthorized()
+      return response.unauthorized({
+        message: 'Unauthorized',
+      })
     }
 
     const shopItem = await ShopItem.find(id)
 
     if (!shopItem) {
-      return response.notFound()
+      return response.notFound({
+        message: 'Shop item not found',
+      })
     }
 
     if (shopItem.clientId) {
-      return response.badRequest('Shop item already purchased')
+      return response.badRequest({
+        message: 'Shop item already purchased',
+      })
     }
+
+    if (user.novaPoints < shopItem.price) {
+      return response.badRequest({
+        message: 'Insufficient points',
+      })
+    }
+
+    NovaPointService.deletePoints(user.id, shopItem.price, `Purchased ${shopItem.name}`)
 
     shopItem.clientId = user.id
     shopItem.datePurchase = DateTime.now()

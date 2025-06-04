@@ -11,6 +11,9 @@ export class NovaPointService {
     RECEIVE_COMMENT: 3,
     DAILY_LOGIN: 1,
     CREATE_EVENT: 10,
+    CREATE_SERVICE: 10,
+    VOLUNTEER_SERVICE: 10,
+    PURCHASE_SHOP_ITEM: 10,
   }
 
   /**
