@@ -21,6 +21,7 @@ const NovaPointsController = () => import('#controllers/nova_points_controller')
 const EventsController = () => import('#controllers/events_controller')
 const NewsController = () => import('#controllers/news_controller')
 const ServicesController = () => import('#controllers/services_controller')
+const ShopItemsController = () => import('#controllers/shop_items_controller')
 
 router.get('/swagger', async () => {
   return AutoSwagger.default.docs(router.toJSON(), swagger)
@@ -198,6 +199,27 @@ router
           })
           .middleware(middleware.auth({ guards: ['api'] }))
           .prefix('/services')
+
+        // Shop items routes
+        router
+          .group(() => {
+            router.get('/', [ShopItemsController, 'index'])
+            router.post('/', [ShopItemsController, 'store']).use(middleware.role(UserRole.ADMIN))
+            router.get('/:id', [ShopItemsController, 'show']).use(middleware.validateNumericId())
+            router
+              .delete('/:id', [ShopItemsController, 'destroy'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
+            router
+              .patch('/:id', [ShopItemsController, 'update'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
+            router
+              .post('/:id/purchase', [ShopItemsController, 'purchase'])
+              .use(middleware.validateNumericId())
+          })
+          .middleware(middleware.auth({ guards: ['api'] }))
+          .prefix('/shop-items')
       })
       .prefix('/v1')
   })
