@@ -9,7 +9,7 @@ import { DateTime } from 'luxon'
 export default class ShopItemsController {
   /**
    * @store
-   * @description Create a new shop item
+   * @description Create a new item
    * @requestBody <createShopItemValidator>
    * @responseBody 201 - <ShopItem>
    */
@@ -46,24 +46,26 @@ export default class ShopItemsController {
 
   /**
    * @index
-   * @description Get all shop items
+   * @description Get all items
    * @responseBody 200 - <ShopItem[]>.paginated()
    * @paramQuery page - The page number - @type(number)
-   * @paramQuery per_page - The number of shop items per page - @type(number)
+   * @paramQuery per_page - The number of items per page - @type(number)
    */
   public async index({ request, response }: HttpContext) {
     const { page, perPage } = request.only(['page', 'perPage'])
 
-    const shopItems = await ShopItem.query().paginate(page, perPage)
+    const shopItems = await ShopItem.query()
+      .preload('owner')
+      .preload('client')
+      .paginate(page, perPage)
 
     return response.json(shopItems)
   }
 
   /**
    * @show
-   * @description Get a shop item by id
+   * @description Get an item by id
    * @responseBody 200 - <ShopItem>
-   * @paramParam id - The id of the shop item - @type(number)
    */
   public async show({ request, response }: HttpContext) {
     const { id } = request.params()
@@ -79,9 +81,8 @@ export default class ShopItemsController {
 
   /**
    * @destroy
-   * @description Delete a shop item by id
+   * @description Delete an item by id
    * @responseBody 200 - <ShopItem>
-   * @paramParam id - The id of the shop item - @type(number)
    */
   public async destroy({ request, response }: HttpContext) {
     const { id } = request.params()
@@ -103,10 +104,9 @@ export default class ShopItemsController {
 
   /**
    * @update
-   * @description Update a shop item by id
+   * @description Update an item by id
    * @requestBody <updateShopItemValidator>
    * @responseBody 200 - <ShopItem>
-   * @paramParam id - The id of the shop item - @type(number)
    */
   public async update({ request, response }: HttpContext) {
     const { id } = request.params()
@@ -150,9 +150,9 @@ export default class ShopItemsController {
 
   /**
    * @purchase
-   * @description Purchase a shop item by id
+   * @summary Purchase an item
+   * @description Purchase an item by id
    * @responseBody 200 - <ShopItem>
-   * @paramParam id - The id of the shop item - @type(number)
    */
   public async purchase({ request, response, auth }: HttpContext) {
     const { id } = request.params()
