@@ -173,6 +173,7 @@ export default class EventsController {
     const isSubscribed = await event
       .related('participants')
       .query()
+      .select('users.id')
       .where('users.id', user.id)
       .first()
     if (!isSubscribed) {
