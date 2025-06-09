@@ -173,10 +173,16 @@ router
         router
           .group(() => {
             router.get('/', [NewsController, 'index'])
-            router.post('/', [NewsController, 'store'])
+            router.post('/', [NewsController, 'store']).use(middleware.role(UserRole.ADMIN))
             router.get('/:id', [NewsController, 'show']).use(middleware.validateNumericId())
-            router.patch('/:id', [NewsController, 'update']).use(middleware.validateNumericId())
-            router.delete('/:id', [NewsController, 'destroy']).use(middleware.validateNumericId())
+            router
+              .patch('/:id', [NewsController, 'update'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
+            router
+              .delete('/:id', [NewsController, 'destroy'])
+              .use(middleware.validateNumericId())
+              .use(middleware.role(UserRole.ADMIN))
           })
           .middleware(middleware.auth({ guards: ['api'] }))
           .prefix('/news')
