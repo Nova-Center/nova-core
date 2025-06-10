@@ -71,6 +71,7 @@ router
         router
           .group(() => {
             router.get('/', [UsersController, 'index']).use(middleware.role(UserRole.ADMIN))
+            router.get('/no-pagination', [UsersController, 'usersWithoutPagination'])
             router.get('/all', [UsersController, 'getUsers'])
             router.get('/stats', [UsersController, 'stats']).use(middleware.role(UserRole.ADMIN))
             router.get('/:id', [UsersController, 'show']).use(middleware.validateNumericId())

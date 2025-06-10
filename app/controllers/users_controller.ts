@@ -23,6 +23,19 @@ export default class UsersController {
   }
 
   /**
+   * @usersWithoutPagination
+   * @summary Get all users without pagination
+   * @description Get all users without pagination
+   * @responseBody 200 - <User[]>
+   */
+  public async usersWithoutPagination({ auth, response, logger }: HttpContext) {
+    const users = await User.all()
+
+    logger.info({ auth: auth.user?.username }, 'Users fetched by')
+    return response.json(users)
+  }
+
+  /**
    * @getUsers
    * @summary Get all users
    * @description Get all users
