@@ -22,6 +22,7 @@ const EventsController = () => import('#controllers/events_controller')
 const NewsController = () => import('#controllers/news_controller')
 const ServicesController = () => import('#controllers/services_controller')
 const ShopItemsController = () => import('#controllers/shop_items_controller')
+const NotificationsController = () => import('#controllers/notifications_controller')
 
 router.get('/swagger', async () => {
   return AutoSwagger.default.docs(router.toJSON(), swagger)
@@ -227,6 +228,15 @@ router
           })
           .middleware(middleware.auth({ guards: ['api'] }))
           .prefix('/shop-items')
+
+        // Notifications routes
+        router
+          .group(() => {
+            router.get('/', [NotificationsController, 'index'])
+            router.post('/:id/read', [NotificationsController, 'read'])
+          })
+          .middleware(middleware.auth({ guards: ['api'] }))
+          .prefix('/notifications')
       })
       .prefix('/v1')
   })

@@ -1,0 +1,6 @@
+export enum NotificationType {
+  POST_LIKE = 'POST_LIKE',
+  POST_COMMENT = 'POST_COMMENT',
+  BAN_ADDED = 'BAN_ADDED',
+  BAN_REMOVED = 'BAN_REMOVED',
+}
