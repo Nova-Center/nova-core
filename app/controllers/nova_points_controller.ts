@@ -3,6 +3,8 @@ import { NovaPointService } from '#services/nova_point_service'
 import { UserRole } from '../types/user_role.enum.js'
 import { addNovaPointsUser } from '#validators/add_nova_points_user'
 import { removeNovaPointsUser } from '#validators/remove_nova_points_user'
+import { NotificationService } from '#services/notification_service'
+import { NotificationType } from '../types/notification.enum.js'
 
 export default class NovaPointsController {
   /**
@@ -75,6 +77,15 @@ export default class NovaPointsController {
 
     try {
       const novaPoint = await NovaPointService.addPoints(id, action, description)
+
+      // Add notification to user
+      await NotificationService.createNotification(
+        id,
+        `You have received ${points} points for ${action}`,
+        `You have received ${points} points for ${action} by admin`,
+        NotificationType.NOVA_POINTS_ADDED
+      )
+
       return response.created(novaPoint)
     } catch (error) {
       return response.badRequest({ message: error.message || 'Failed to add points' })
@@ -102,6 +113,14 @@ export default class NovaPointsController {
     }
 
     const novaPoints = await NovaPointService.deletePoints(id, points, description)
+
+    // Add notification to user
+    await NotificationService.createNotification(
+      id,
+      `You have lost ${points}`,
+      `You have lost ${points} points for ${description} by admin`,
+      NotificationType.NOVA_POINTS_REMOVED
+    )
 
     return response.ok({ novaPoints })
   }

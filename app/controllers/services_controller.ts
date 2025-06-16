@@ -3,6 +3,8 @@ import { createServiceValidator } from '#validators/service'
 import type { HttpContext } from '@adonisjs/core/http'
 import { UserRole } from '../types/user_role.enum.js'
 import { NovaPointService } from '#services/nova_point_service'
+import { NotificationService } from '#services/notification_service'
+import { NotificationType } from '../types/notification.enum.js'
 
 export default class ServicesController {
   /**
@@ -135,6 +137,14 @@ export default class ServicesController {
 
     NovaPointService.addPoints(user.id, 'VOLUNTEER_SERVICE', 'Volunteered for a service')
 
+    // Add notification to service owner
+    await NotificationService.createNotification(
+      service.ownerId,
+      `${user.username} volunteered for your service ${service.title}`,
+      `${user.username} has volunteered for your service ${service.title}`,
+      NotificationType.SERVICE_VOLUNTEER
+    )
+
     service.volunteerId = user.id
     await service.save()
 
@@ -168,6 +178,15 @@ export default class ServicesController {
     if (service.volunteerId !== user.id) {
       return response.badRequest({ message: 'You are not a volunteer for this service' })
     }
+
+    // Add notification to service owner
+
+    await NotificationService.createNotification(
+      service.ownerId,
+      `${user.username} unvolunteered from your service ${service.title}`,
+      `${user.username} has unvolunteered from your service ${service.title}`,
+      NotificationType.SERVICE_UNVOLUNTEER
+    )
 
     service.volunteerId = null
     await service.save()

@@ -8,6 +8,8 @@ import User from '#models/user'
 import { readFile } from 'node:fs/promises'
 import drive from '@adonisjs/drive/services/main'
 import { NovaPointService } from '#services/nova_point_service'
+import { NotificationService } from '#services/notification_service'
+import { NotificationType } from '../types/notification.enum.js'
 
 export default class EventsController {
   /**
@@ -126,6 +128,14 @@ export default class EventsController {
       return response.badRequest({ message: 'Already subscribed to this event' })
     }
 
+    // Add notification to event owner
+    await NotificationService.createNotification(
+      event.userId,
+      `${user.username} subscribed to your event: ${event.title}`,
+      `${user.username} has subscribed to your event: ${event.title}`,
+      NotificationType.EVENT_SUBSCRIBE
+    )
+
     await event.related('participants').attach([user.id])
 
     return response.ok({ message: 'Successfully subscribed to event' })
@@ -145,6 +155,14 @@ export default class EventsController {
     if (!isSubscribed) {
       return response.badRequest({ message: 'Not subscribed to this event' })
     }
+
+    // Add notification to event owner
+    await NotificationService.createNotification(
+      event.userId,
+      `${user.username} unsubscribed from your event: ${event.title}`,
+      `${user.username} has unsubscribed from your event: ${event.title}`,
+      NotificationType.EVENT_UNSUBSCRIBE
+    )
 
     await event.related('participants').detach([user.id])
     return response.ok({ message: 'Successfully unsubscribed from event' })
@@ -181,6 +199,15 @@ export default class EventsController {
     }
 
     await event?.related('participants').detach([user.id])
+
+    // Add notification to event owner
+    await NotificationService.createNotification(
+      event.userId,
+      `${user.username} unsubscribed from your event by admin: ${event.title}`,
+      `${user.username} has unsubscribed from your event by admin: ${event.title}`,
+      NotificationType.EVENT_UNSUBSCRIBE
+    )
+
     return response.ok({ message: 'Successfully unsubscribed from event' })
   }
 

@@ -355,7 +355,23 @@ export default class PostsController {
       await like.delete()
     }
 
+    // Add points to comment author for receiving a like
+    await NovaPointService.addPoints(
+      comment.userId,
+      'RECEIVE_LIKE',
+      `Received like on comment: ${comment.content.substring(0, 50)}...`
+    )
+
     await CommentLike.create({ commentId: id, userId: user.id })
+
+    // Add notification to comment author
+
+    await NotificationService.createNotification(
+      comment.userId,
+      `${user.username} liked your comment`,
+      `${comment.content.substring(0, 50).concat('...')} has been liked`,
+      NotificationType.COMMENT_LIKE
+    )
 
     return response.json(comment)
   }
