@@ -1,7 +1,7 @@
 import Notification from '#models/notification'
 import { NotificationType } from '../types/notification.enum.js'
 
-class NotificationService {
+export class NotificationService {
   public static async createNotification(
     userId: number,
     title: string,
@@ -18,5 +18,3 @@ class NotificationService {
     return notification
   }
 }
-
-export default new NotificationService()

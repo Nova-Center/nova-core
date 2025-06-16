@@ -9,6 +9,8 @@ import PostLike from '#models/post_like'
 import CommentLike from '#models/comment_like'
 import { NovaPointService } from '#services/nova_point_service'
 import { UserRole } from '../types/user_role.enum.js'
+import { NotificationService } from '#services/notification_service'
+import { NotificationType } from '../types/notification.enum.js'
 
 export default class PostsController {
   /**
@@ -172,6 +174,14 @@ export default class PostsController {
       `Received like on post: ${post.content.substring(0, 50)}...`
     )
 
+    // Add notification to post author
+    await NotificationService.createNotification(
+      post.userId,
+      `${user.username} liked your post`,
+      `${post.content.substring(0, 50).concat('...')} has been liked`,
+      NotificationType.POST_LIKE
+    )
+
     await post.save()
     return response.json(post)
   }
@@ -270,6 +280,14 @@ export default class PostsController {
       post.userId,
       'RECEIVE_COMMENT',
       `Received comment on post: ${post.content.substring(0, 50)}...`
+    )
+
+    // Add notification to post author
+    await NotificationService.createNotification(
+      post.userId,
+      `${user.username} commented on your post`,
+      `${content.substring(0, 50).concat('...')} has been commented`,
+      NotificationType.POST_COMMENT
     )
 
     return response.json(comment)

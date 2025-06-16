@@ -6,9 +6,12 @@ export default class NotificationsController {
    * @index
    * @summary Get all notifications for the authenticated user
    * @description Get all notifications for the authenticated user
-   * @responseBody 200 - <Notification[]>
+   * @responseBody 200 - <Notification[]>.paginated()
    */
-  public async index({ auth, response }: HttpContext) {
+  public async index({ auth, response, request }: HttpContext) {
+    const page = request.input('page', 1)
+    const perPage = request.input('per_page', 10)
+
     const user = await auth.authenticate()
 
     if (!user) {
@@ -18,6 +21,7 @@ export default class NotificationsController {
     const notifications = await Notification.query()
       .where('user_id', user.id)
       .orderBy('created_at', 'desc')
+      .paginate(page, perPage)
 
     return response.json(notifications)
   }
@@ -50,5 +54,43 @@ export default class NotificationsController {
     await notification.save()
 
     return response.json(notification)
+  }
+
+  /**
+   * @readAll
+   * @summary Mark all notifications as read
+   * @description Mark all notifications as read
+   * @responseBody 200 - <Notification[]>
+   */
+  public async readAll({ auth, response }: HttpContext) {
+    const user = await auth.authenticate()
+
+    if (!user) {
+      return response.status(401).json({ message: 'Unauthorized' })
+    }
+
+    await Notification.query().where('user_id', user.id).update({ isRead: true })
+
+    return response.json({ message: 'All notifications marked as read' })
+  }
+
+  /**
+   * @numbersOfNotifications
+   * @summary Get the number of unread notifications
+   * @description Get the number of unread notifications
+   * @responseBody 200 - { "count": 56 }
+   */
+  public async numbersOfNotifications({ auth, response }: HttpContext) {
+    const user = await auth.authenticate()
+
+    if (!user) {
+      return response.status(401).json({ message: 'Unauthorized' })
+    }
+
+    const unreadNotifications = await Notification.query()
+      .where('user_id', user.id)
+      .where('isRead', false)
+
+    return response.json({ count: unreadNotifications.length })
   }
 }

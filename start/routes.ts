@@ -233,7 +233,14 @@ router
         router
           .group(() => {
             router.get('/', [NotificationsController, 'index'])
-            router.post('/:id/read', [NotificationsController, 'read'])
+            router
+              .post('/:id/read', [NotificationsController, 'read'])
+              .use(middleware.validateNumericId())
+            router.post('/read-all', [NotificationsController, 'readAll'])
+            router.get('/numbers-of-notifications', [
+              NotificationsController,
+              'numbersOfNotifications',
+            ])
           })
           .middleware(middleware.auth({ guards: ['api'] }))
           .prefix('/notifications')
