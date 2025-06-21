@@ -116,14 +116,30 @@ export default class EventsController {
    */
   async subscribe({ params, response, auth }: HttpContext) {
     const event = await Event.findOrFail(params.id)
-    const user = auth.user!
+    const user = auth.user
 
-    const participantCount = await event.related('participants').query().count('* as total')
+    if (!user) {
+      return response.unauthorized({ message: 'You must be logged in to subscribe to an event' })
+    }
+
+    const participantCount = await Event.query()
+      .where('id', event.id)
+      .whereHas('participants', (query) => {
+        query.where('user_id', user.id)
+      })
+      .count('* as total')
+
     if (participantCount[0].$extras.total >= event.maxParticipants) {
       return response.badRequest({ message: 'Event is full' })
     }
 
-    const isSubscribed = await event.related('participants').query().where('id', user.id).first()
+    const isSubscribed = await Event.query()
+      .where('id', event.id)
+      .whereHas('participants', (query) => {
+        query.where('user_id', user.id)
+      })
+      .first()
+
     if (isSubscribed) {
       return response.badRequest({ message: 'Already subscribed to this event' })
     }
@@ -149,9 +165,21 @@ export default class EventsController {
    */
   async unsubscribe({ params, response, auth }: HttpContext) {
     const event = await Event.findOrFail(params.id)
-    const user = auth.user!
+    const user = auth.user
 
-    const isSubscribed = await event.related('participants').query().where('id', user.id).first()
+    if (!user) {
+      return response.unauthorized({
+        message: 'You must be logged in to unsubscribe from an event',
+      })
+    }
+
+    const isSubscribed = await Event.query()
+      .where('id', event.id)
+      .whereHas('participants', (query) => {
+        query.where('user_id', user.id)
+      })
+      .first()
+
     if (!isSubscribed) {
       return response.badRequest({ message: 'Not subscribed to this event' })
     }
@@ -188,12 +216,13 @@ export default class EventsController {
     }
 
     // Check if user is subscribed to event
-    const isSubscribed = await event
-      .related('participants')
-      .query()
-      .select('users.id')
-      .where('users.id', user.id)
+    const isSubscribed = await Event.query()
+      .where('id', event.id)
+      .whereHas('participants', (query) => {
+        query.where('user_id', user.id)
+      })
       .first()
+
     if (!isSubscribed) {
       return response.badRequest({ message: 'User is not subscribed to this event' })
     }
