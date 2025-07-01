@@ -23,6 +23,7 @@ const NewsController = () => import('#controllers/news_controller')
 const ServicesController = () => import('#controllers/services_controller')
 const ShopItemsController = () => import('#controllers/shop_items_controller')
 const NotificationsController = () => import('#controllers/notifications_controller')
+const PrivateMessagesController = () => import('#controllers/private_messages_controller')
 
 router.get('/swagger', async () => {
   return AutoSwagger.default.docs(router.toJSON(), swagger)
@@ -244,6 +245,16 @@ router
           })
           .middleware(middleware.auth({ guards: ['api'] }))
           .prefix('/notifications')
+
+        // Private Messages routes
+        router
+          .group(() => {
+            router.get('/messages/conversation', [PrivateMessagesController, 'getConversation'])
+            router.post('/messages/mark-as-read', [PrivateMessagesController, 'markAsRead'])
+            router.get('/messages/unread-count', [PrivateMessagesController, 'getUnreadCount'])
+          })
+          .middleware(middleware.auth({ guards: ['api'] }))
+          .prefix('/messages')
       })
       .prefix('/v1')
   })

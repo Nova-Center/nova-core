@@ -11,5 +11,6 @@ export default class extends BaseSeeder {
     await this.seed(await import('#database/seeders/event_seeder'))
     await this.seed(await import('#database/seeders/news_seeder'))
     await this.seed(await import('#database/seeders/service_seeder'))
+    await this.seed(await import('#database/seeders/shop_item_seeder'))
   }
 }

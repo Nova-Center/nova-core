@@ -1,6 +1,7 @@
 import { Server } from 'socket.io'
 import server from '@adonisjs/core/services/server'
 import User from '#models/user'
+import PrivateMessage from '#models/private_message'
 import { DateTime } from 'luxon'
 
 class WebSocketService {
@@ -44,6 +45,55 @@ class WebSocketService {
         this.io?.emit('user:status', { userId, isOnline: true })
       }
 
+      // Handle private messages
+      socket.on('private:message', async (data) => {
+        const { receiverId, content } = data
+
+        // Save message to database
+        const message = await PrivateMessage.create({
+          senderId: userId,
+          receiverId,
+          content,
+          isRead: false,
+        })
+        await message.load('sender')
+        await message.load('receiver')
+
+        // Emit to receiver if online
+        const receiverSockets = this.userSockets.get(receiverId)
+        if (receiverSockets?.length) {
+          receiverSockets.forEach((socketId) => {
+            this.io?.to(socketId).emit('private:message', message)
+          })
+        }
+
+        // Emit back to sender
+        socket.emit('private:message:sent', message)
+      })
+
+      // Handle message read status
+      socket.on('private:message:read', async (data) => {
+        const { senderId } = data
+        await PrivateMessage.query()
+          .where('sender_id', senderId)
+          .where('receiver_id', userId)
+          .where('is_read', false)
+          .update({ is_read: true })
+
+        this.emitMessageRead(senderId, userId)
+      })
+
+      // Handle typing status
+      socket.on('private:typing', (data) => {
+        const { receiverId } = data
+        const receiverSockets = this.userSockets.get(receiverId)
+        if (receiverSockets?.length) {
+          receiverSockets.forEach((socketId) => {
+            this.io?.to(socketId).emit('private:typing', { userId })
+          })
+        }
+      })
+
       // Handle disconnection
       socket.on('disconnect', async () => {
         const remainingSockets = this.userSockets.get(userId) || []
@@ -64,6 +114,18 @@ class WebSocketService {
         }
       })
     })
+  }
+
+  /**
+   * Emit message read status
+   */
+  emitMessageRead(senderId: number, readerId: number) {
+    const senderSockets = this.userSockets.get(senderId)
+    if (senderSockets?.length) {
+      senderSockets.forEach((socketId) => {
+        this.io?.to(socketId).emit('private:message:read', { readerId })
+      })
+    }
   }
 
   /**

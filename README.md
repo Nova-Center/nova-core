@@ -16,6 +16,7 @@ A modern, full-featured backend application built with AdonisJS, featuring authe
 - **Docker Support**: Containerized development environment
 - **Testing**: Built-in testing framework with Japa
 - **Code Quality**: ESLint and Prettier for code formatting and linting
+- **Real-time Communication**: WebSocket support for online status and private messaging
 
 ## 📋 Prerequisites
 
@@ -111,6 +112,98 @@ http://localhost:3333/docs
 ```
 
 ![API Documentation](docs/nova-core-screen.jpeg)
+
+## 🔌 WebSocket Documentation
+
+The application uses Socket.IO for real-time communication. Here are the available features:
+
+### User Online Status
+
+```typescript
+// Connect to WebSocket server
+const socket = io('http://localhost:3333', {
+  auth: { userId: currentUserId },
+})
+
+// Listen for user status changes
+socket.on('user:status', ({ userId, isOnline }) => {
+  console.log(`User ${userId} is ${isOnline ? 'online' : 'offline'}`)
+})
+```
+
+### Private Messaging
+
+The application supports real-time private messaging between users. Here are the available events:
+
+#### Sending Messages
+
+```typescript
+// Send a private message
+socket.emit('private:message', {
+  receiverId: otherUserId,
+  content: 'Hello!',
+})
+
+// Listen for sent confirmation
+socket.on('private:message:sent', (message) => {
+  console.log('Message sent:', message)
+})
+```
+
+#### Receiving Messages
+
+```typescript
+// Listen for incoming messages
+socket.on('private:message', (message) => {
+  console.log('New message:', message)
+})
+```
+
+#### Message Read Status
+
+```typescript
+// Mark messages as read
+socket.emit('private:message:read', {
+  senderId: otherUserId,
+})
+
+// Listen for read receipts
+socket.on('private:message:read', ({ readerId }) => {
+  console.log('Messages read by:', readerId)
+})
+```
+
+#### Typing Indicators
+
+```typescript
+// Send typing status
+socket.emit('private:typing', {
+  receiverId: otherUserId,
+})
+
+// Listen for typing status
+socket.on('private:typing', ({ userId }) => {
+  console.log('User typing:', userId)
+})
+```
+
+### REST API Endpoints
+
+Private messaging also includes REST endpoints for managing messages:
+
+- `GET /api/v1/messages/conversation?userId=:userId&otherUserId=:otherUserId`
+
+  - Get conversation history between two users
+
+- `POST /api/v1/messages/mark-as-read`
+
+  - Mark messages as read
+  - Body: `{ userId: number, senderId: number }`
+
+- `GET /api/v1/messages/unread-count?userId=:userId`
+  - Get number of unread messages for a user
+
+All endpoints require authentication using Bearer token.
 
 ## 🧪 Testing
 
