@@ -191,19 +191,19 @@ socket.on('private:typing', ({ userId }) => {
 
 Private messaging also includes REST endpoints for managing messages:
 
-- `GET /api/v1/messages/conversation?userId=:userId&otherUserId=:otherUserId`
+- `GET /v1/messages/conversation?userId=:userId&otherUserId=:otherUserId`
 
   - Get conversation history between two users
 
-- `POST /api/v1/messages/mark-as-read`
+- `POST /v1/messages/mark-as-read`
 
   - Mark messages as read
   - Body: `{ userId: number, senderId: number }`
 
-- `GET /api/v1/messages/unread-count?userId=:userId`
+- `GET /v1/messages/unread-count?userId=:userId`
   - Get number of unread messages for a user
 
-All endpoints require authentication using Bearer token.
+All endpoints require authentication using Bearer token. Full API documentation is available at `/docs`.
 
 ## 🧪 Testing
 
