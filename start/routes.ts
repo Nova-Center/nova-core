@@ -252,6 +252,7 @@ router
             router
               .get('/conversation/:otherUserId', [PrivateMessagesController, 'getConversation'])
               .use(middleware.validateNumericId())
+            router.get('/last-messages', [PrivateMessagesController, 'getAllLastMessages'])
             router
               .post('/mark-as-read/:senderId', [PrivateMessagesController, 'markAsRead'])
               .use(middleware.validateNumericId())

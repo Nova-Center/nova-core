@@ -4,7 +4,11 @@ import WebSocketService from '#services/websocket_service'
 
 export default class PrivateMessagesController {
   /**
-   * Get conversation history between two users
+   * @getConversation
+   * @summary Get conversation history between two users
+   * @description This method returns the conversation history between two users.
+   * @responseBody 200 - <PrivateMessage[]>
+   * @responseBody 404 - { message: 'No messages found' }
    */
   async getConversation({ auth, request, response }: HttpContext) {
     const user = auth.user!
@@ -21,8 +25,6 @@ export default class PrivateMessagesController {
           })
       })
       .orderBy('created_at', 'asc')
-      .preload('sender')
-      .preload('receiver')
 
     if (messages.length === 0) {
       return response.status(404).json({ message: 'No messages found' })
@@ -32,7 +34,34 @@ export default class PrivateMessagesController {
   }
 
   /**
-   * Mark messages as read
+   * @getAllLastMessages
+   * @summary Get all last messages for the current user
+   * @description This method returns all last messages for the current user.
+   * @responseBody 200 - <PrivateMessage[]>
+   * @responseBody 404 - { message: 'No messages found' }
+   */
+  async getAllLastMessages({ auth, response }: HttpContext) {
+    const user = auth.user!
+    const userId = user.id
+
+    const messages = await PrivateMessage.query()
+      .distinctOn(['sender_id', 'receiver_id'])
+      .where((query) => {
+        query.where('receiver_id', userId).orWhere('sender_id', userId)
+      })
+      .orderBy('sender_id')
+      .orderBy('receiver_id')
+      .orderBy('created_at', 'desc')
+
+    return response.json(messages)
+  }
+
+  /**
+   * @markAsRead
+   * @summary Mark messages as read
+   * @description This method marks the messages as read.
+   * @responseBody 200 - { message: 'Messages marked as read' }
+   * @responseBody 404 - { message: 'No messages found' }
    */
   async markAsRead({ auth, request, response }: HttpContext) {
     const user = auth.user!
@@ -51,7 +80,10 @@ export default class PrivateMessagesController {
   }
 
   /**
-   * Get unread messages count
+   * @getUnreadCount
+   * @summary Get unread messages count
+   * @description This method returns the number of unread messages for the current user.
+   * @responseBody 200 - { count: <number> }
    */
   async getUnreadCount({ auth, response }: HttpContext) {
     const user = auth.user!
