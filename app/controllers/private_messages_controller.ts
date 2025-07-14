@@ -24,6 +24,10 @@ export default class PrivateMessagesController {
       .preload('sender')
       .preload('receiver')
 
+    if (messages.length === 0) {
+      return response.status(404).json({ message: 'No messages found' })
+    }
+
     return response.json(messages)
   }
 
