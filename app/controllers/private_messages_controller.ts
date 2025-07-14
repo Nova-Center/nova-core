@@ -6,9 +6,10 @@ export default class PrivateMessagesController {
   /**
    * Get conversation history between two users
    */
-  async getConversation({ request, response }: HttpContext) {
-    const userId = request.input('userId')
-    const otherUserId = request.input('otherUserId')
+  async getConversation({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+    const userId = user.id
+    const otherUserId = request.param('otherUserId')
 
     const messages = await PrivateMessage.query()
       .where((query) => {
@@ -29,9 +30,10 @@ export default class PrivateMessagesController {
   /**
    * Mark messages as read
    */
-  async markAsRead({ request, response }: HttpContext) {
-    const userId = request.input('userId')
-    const senderId = request.input('senderId')
+  async markAsRead({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+    const userId = user.id
+    const senderId = request.param('senderId')
 
     await PrivateMessage.query()
       .where('sender_id', senderId)
@@ -47,8 +49,9 @@ export default class PrivateMessagesController {
   /**
    * Get unread messages count
    */
-  async getUnreadCount({ request, response }: HttpContext) {
-    const userId = request.input('userId')
+  async getUnreadCount({ auth, response }: HttpContext) {
+    const user = auth.user!
+    const userId = user.id
 
     const count = await PrivateMessage.query()
       .where('receiver_id', userId)

@@ -249,9 +249,13 @@ router
         // Private Messages routes
         router
           .group(() => {
-            router.get('/messages/conversation', [PrivateMessagesController, 'getConversation'])
-            router.post('/messages/mark-as-read', [PrivateMessagesController, 'markAsRead'])
-            router.get('/messages/unread-count', [PrivateMessagesController, 'getUnreadCount'])
+            router
+              .get('/conversation/:otherUserId', [PrivateMessagesController, 'getConversation'])
+              .use(middleware.validateNumericId())
+            router
+              .post('/mark-as-read/:senderId', [PrivateMessagesController, 'markAsRead'])
+              .use(middleware.validateNumericId())
+            router.get('/unread-count', [PrivateMessagesController, 'getUnreadCount'])
           })
           .middleware(middleware.auth({ guards: ['api'] }))
           .prefix('/messages')
