@@ -50,6 +50,17 @@ export default class ServicesController {
   }
 
   /**
+   * @noPagination
+   * @summary Get all services without pagination
+   * @description Get all services without pagination
+   * @responseBody 200 - <Service[]>
+   */
+  public async noPagination({ response }: HttpContext) {
+    const services = await Service.query().orderBy('created_at', 'desc')
+    return response.json(services)
+  }
+
+  /**
    * @show
    * @description Get a service by id
    * @responseBody 200 - <Service>

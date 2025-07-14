@@ -39,6 +39,24 @@ export default class PostsController {
   }
 
   /**
+   * @noPagination
+   * @summary Get all posts without pagination
+   * @description Get all posts without pagination
+   * @responseBody 200 - <Post[]>
+   */
+  public async noPagination({ response }: HttpContext) {
+    const posts = await Post.query()
+      .preload('user')
+      .preload('comments', (commentsQuery) => {
+        commentsQuery.preload('likes')
+      })
+      .preload('likes')
+      .orderBy('created_at', 'desc')
+
+    return response.json(posts)
+  }
+
+  /**
    * @store
    * @description Create a new post
    * @requestBody <createPostValidator>

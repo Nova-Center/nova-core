@@ -27,6 +27,26 @@ export default class NotificationsController {
   }
 
   /**
+   * @noPagination
+   * @summary Get all notifications without pagination
+   * @description Get all notifications without pagination
+   * @responseBody 200 - <Notification[]>
+   */
+  public async noPagination({ auth, response }: HttpContext) {
+    const user = await auth.authenticate()
+
+    if (!user) {
+      return response.status(401).json({ message: 'Unauthorized' })
+    }
+
+    const notifications = await Notification.query()
+      .where('user_id', user.id)
+      .orderBy('created_at', 'desc')
+
+    return response.json(notifications)
+  }
+
+  /**
    * @read
    * @summary Mark a notification as read
    * @description Mark a notification as read

@@ -32,6 +32,17 @@ export default class EventsController {
   }
 
   /**
+   * @noPagination
+   * @summary Get all events without pagination
+   * @description Get all events without pagination
+   * @responseBody 200 - <Event[]>
+   */
+  async noPagination({ response }: HttpContext) {
+    const events = await Event.query().preload('participants').orderBy('created_at', 'desc')
+    return response.ok(events)
+  }
+
+  /**
    * @show
    * @summary Get event by id
    * @description Get event by id

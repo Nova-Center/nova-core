@@ -61,6 +61,17 @@ export default class ShopItemsController {
   }
 
   /**
+   * @noPagination
+   * @summary Get all items without pagination
+   * @description Get all items without pagination
+   * @responseBody 200 - <ShopItem[]>
+   */
+  public async noPagination({ response }: HttpContext) {
+    const shopItems = await ShopItem.query().orderBy('created_at', 'desc')
+    return response.json(shopItems)
+  }
+
+  /**
    * @show
    * @description Get an item by id
    * @responseBody 200 - <ShopItem>

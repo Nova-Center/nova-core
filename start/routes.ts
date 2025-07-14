@@ -101,6 +101,7 @@ router
         router
           .group(() => {
             router.get('/', [PostsController, 'index'])
+            router.get('/no-pagination', [PostsController, 'noPagination'])
             router.get('/stats', [PostsController, 'stats']).use(middleware.role(UserRole.ADMIN))
             router.post('/', [PostsController, 'store'])
             router.get('/:id', [PostsController, 'show']).use(middleware.validateNumericId())
@@ -154,6 +155,7 @@ router
         router
           .group(() => {
             router.get('/', [EventsController, 'index'])
+            router.get('/no-pagination', [EventsController, 'noPagination'])
             router.get('/stats', [EventsController, 'stats'])
             router.get('/:id', [EventsController, 'show']).use(middleware.validateNumericId())
             router.post('/', [EventsController, 'store'])
@@ -194,6 +196,7 @@ router
         router
           .group(() => {
             router.get('/', [ServicesController, 'index'])
+            router.get('/no-pagination', [ServicesController, 'noPagination'])
             router.post('/', [ServicesController, 'store'])
             router.get('/:id', [ServicesController, 'show']).use(middleware.validateNumericId())
             router
@@ -213,6 +216,7 @@ router
         router
           .group(() => {
             router.get('/', [ShopItemsController, 'index'])
+            router.get('/no-pagination', [ShopItemsController, 'noPagination'])
             router.post('/', [ShopItemsController, 'store']).use(middleware.role(UserRole.ADMIN))
             router.get('/:id', [ShopItemsController, 'show']).use(middleware.validateNumericId())
             router
@@ -234,6 +238,7 @@ router
         router
           .group(() => {
             router.get('/', [NotificationsController, 'index'])
+            router.get('/no-pagination', [NotificationsController, 'noPagination'])
             router
               .post('/:id/read', [NotificationsController, 'read'])
               .use(middleware.validateNumericId())
