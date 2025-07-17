@@ -28,6 +28,20 @@ export default class Service extends BaseModel {
   @belongsTo(() => User)
   declare volunteer: BelongsTo<typeof User>
 
+  @column()
+  declare exchangeServiceId: number | null
+
+  @belongsTo(() => Service, {
+    foreignKey: 'exchangeServiceId',
+  })
+  declare exchangeService: BelongsTo<typeof Service>
+
+  @column()
+  declare desiredServiceDescription: string | null
+
+  @column()
+  declare isExchangeOnly: boolean
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 

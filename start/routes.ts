@@ -208,6 +208,15 @@ router
             router
               .post('/:id/unvolunteer', [ServicesController, 'unvolunteer'])
               .use(middleware.validateNumericId())
+            router
+              .post('/:id/propose-exchange', [ServicesController, 'proposeExchange'])
+              .use(middleware.validateNumericId())
+            router
+              .post('/:id/accept-exchange', [ServicesController, 'acceptExchange'])
+              .use(middleware.validateNumericId())
+            router
+              .post('/:id/cancel-exchange', [ServicesController, 'cancelExchange'])
+              .use(middleware.validateNumericId())
           })
           .middleware(middleware.auth({ guards: ['api'] }))
           .prefix('/services')
