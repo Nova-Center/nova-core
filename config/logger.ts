@@ -12,8 +12,8 @@ const loggerConfig = defineConfig({
   loggers: {
     app: {
       enabled: true,
-      name: env.get('APP_NAME'),
-      level: env.get('LOG_LEVEL'),
+      name: env.get('APP_NAME') as string,
+      level: env.get('LOG_LEVEL') as 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace',
       transport: {
         targets: targets()
           .pushIf(!app.inProduction, targets.pretty())

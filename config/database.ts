@@ -10,11 +10,11 @@ const dbConfig = defineConfig({
         paths: ['./database/seeders/main'],
       },
       connection: {
-        host: env.get('DB_HOST'),
-        port: env.get('DB_PORT'),
-        user: env.get('DB_USER'),
-        password: env.get('DB_PASSWORD'),
-        database: env.get('DB_DATABASE'),
+        host: env.get('DB_HOST') as string,
+        port: env.get('DB_PORT') as number,
+        user: env.get('DB_USER') as string,
+        password: env.get('DB_PASSWORD') as string,
+        database: env.get('DB_DATABASE') as string,
       },
       migrations: {
         naturalSort: true,
