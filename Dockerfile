@@ -18,6 +18,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules /app/node_modules
 ADD . .
 ENV LOG_LEVEL=info
+ENV APP_KEY=temporary_key_for_docs_generation
 RUN node ace docs:generate
 RUN node ace build
 
