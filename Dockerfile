@@ -26,9 +26,4 @@ WORKDIR /app
 COPY --from=production-deps /app/node_modules /app/node_modules
 COPY --from=build /app/build /app
 EXPOSE 8080
-COPY start.sh .
-RUN chmod +x ./start.sh
-
-# Démarre via CMD (pas ENTRYPOINT)
-CMD ["./start.sh"]
 CMD ["node", "./bin/server.js"]
