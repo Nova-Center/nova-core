@@ -17,10 +17,23 @@ FROM base AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules /app/node_modules
 ADD . .
-ENV LOG_LEVEL=info
-ENV APP_KEY=temporary_key_for_docs_generation
-RUN node ace docs:generate
+RUN \
+  export PORT=8080 && \
+  export APP_KEY=dummydummykey123456789012345678901234 && \
+  export HOST=0.0.0.0 && \
+  export LOG_LEVEL=info && \
+  export DB_HOST=localhost && \
+  export DB_PORT=5432 && \
+  export DB_USER=postgres && \
+  export DB_DATABASE=mydb && \
+  export DRIVE_DISK=local && \
+  export AWS_ACCESS_KEY_ID=dummy && \
+  export AWS_SECRET_ACCESS_KEY=dummy && \
+  export AWS_REGION=us-east-1 && \
+  export S3_BUCKET=dummybucket && \
+  node ace docs:generate
 RUN node ace build
+RUN cp swagger.yml build/swagger.yml
 
 # Production stage
 FROM base
