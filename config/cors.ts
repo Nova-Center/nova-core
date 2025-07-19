@@ -11,7 +11,8 @@ const corsConfig = defineConfig({
   origin: [
     'http://localhost:3000',
     'http://localhost:3001',
-    'https://nova-dash-production.up.railway.app',
+    'https://nova-dash.up.railway.app',
+    'https://nova-connect.up.railway.app',
   ],
   methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
   headers: true,

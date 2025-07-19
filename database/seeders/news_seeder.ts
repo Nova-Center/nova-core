@@ -8,100 +8,316 @@ export default class extends BaseSeeder {
 
     await News.createMany([
       {
-        title: 'Example of README.md',
-        content:
-          '# React Vision Camera\n\n### Features\n\nVisionCamera is a powerful, high-performance Camera library for React Native. It features:\n\n* 📸 Photo and Video capture\n* 👁️ QR/Barcode scanner\n* 📱 Customizable devices and multi-cameras ("fish-eye" zoom)\n* 🎞️ Customizable resolutions and aspect-ratios (4k/8k images)\n* ⏱️ Customizable FPS (30..240 FPS)\n* 🧩 [Frame Processors](https://react-native-vision-camera.com/docs/guides/frame-processors) (JS worklets to run facial recognition, AI object detection, realtime video chats, ...)\n* 🎨 Drawing shapes, text, filters or shaders onto the Camera\n* 🔍 Smooth zooming (Reanimated)\n* ⏯️ Fast pause and resume\n* 🌓 HDR & Night modes\n* ⚡ Custom C++/GPU accelerated video pipeline (OpenGL)\n\nInstall VisionCamera from npm:\n\n```sh\nnpm i react-native-vision-camera\ncd ios && pod install\n```\n\n..and get started by [setting up permissions](https://react-native-vision-camera.com/docs/guides)!\n\n### Documentation\n\n* [Guides](https://react-native-vision-camera.com/docs/guides)\n* [API](https://react-native-vision-camera.com/docs/api)\n* [Example](./example/)\n* [Frame Processor Plugins](https://react-native-vision-camera.com/docs/guides/frame-processor-plugins-community)\n\n### ShadowLens\n\nTo see VisionCamera in action, check out [ShadowLens](https://mrousavy.com/projects/shadowlens)!\n\n### Example\n\n```tsx\nfunction App() {\n  const device = useCameraDevice(\'back\')\n\n  if (device == null) return <NoCameraErrorView />\n  return (\n    <Camera\n      style={StyleSheet.absoluteFill}\n      device={device}\n      isActive={true}\n    />\n  )\n}\n```\n\n> See the [example](./example/) app\n\n### Adopting at scale\n\nVisionCamera is provided _as is_, I work on it in my free time.\n\nIf you\'re integrating VisionCamera in a production app, consider [funding this project](https://github.com/sponsors/mrousavy) and <a href="mailto:me@mrousavy.com?subject=Adopting VisionCamera at scale">contact me</a> to receive premium enterprise support, help with issues, prioritize bugfixes, request features, help at integrating VisionCamera and/or Frame Processors, and more.\n\n### Socials\n\n* 🐦 [**Follow me on Twitter**](https://twitter.com/mrousavy) for updates\n* 📝 [**Check out my blog**](https://mrousavy.com/blog) for examples and experiments\n* 💬 [**Join the Margelo Community Discord**](https://margelo.com/discord) for chatting about VisionCamera\n* 💖 [**Sponsor me on GitHub**](https://github.com/sponsors/mrousavy) to support my work\n* 🍪 [**Buy me a Ko-Fi**](https://ko-fi.com/mrousavy) to support my work',
-        excerpt: 'There is an example of markdown compiler',
-        tags: ['react', 'typescript'],
-        userId: users[Math.floor(Math.random() * users.length)].id,
-      },
-      {
-        title: "Découverte de l'intelligence artificielle générative",
-        excerpt: "Explorez les principes et applications de l'IA générative dans le monde moderne.",
-        content:
-          "# Découverte de l'intelligence artificielle générative\nL'intelligence artificielle générative (IAG) désigne une catégorie d'IA capable de créer du contenu original, qu'il s'agisse de texte, d'images, de musique ou de code.\n\n## Domaines d'application\n\n### Textes et langage naturel\n\nDes modèles comme GPT permettent de générer des articles, du code ou des réponses en langage naturel.\n\n### Images et médias\n\nDes outils comme DALL·E et Midjourney génèrent des visuels à partir de simples descriptions textuelles.\n\n## Défis et éthique\n\nL'IAG soulève des questions sur le plagiat, les droits d'auteur et la désinformation.\n\n## Conclusion\n\nL'IA générative ouvre des perspectives fascinantes tout en appelant à une réflexion éthique approfondie.",
-        tags: ['ia', 'gpt', 'générative', 'deep learning'],
-        userId: users[Math.floor(Math.random() * users.length)].id,
-      },
-      {
-        title: 'Comprendre le Serverless et ses usages',
+        title: 'Nouveau marché bio le dimanche matin',
         excerpt:
-          "Apprenez comment l'approche serverless simplifie le déploiement d'applications modernes.",
-        content:
-          "# Comprendre le Serverless et ses usages\nLe serverless est un modèle d'exécution cloud où le fournisseur gère l'infrastructure serveur.\n\n## Fonctionnement\n\n### FaaS\n\nDes fonctions sont déclenchées à la demande, comme avec AWS Lambda ou Vercel.\n\n### Avantages\n\nMoins de gestion d'infrastructure, scalabilité automatique et facturation à l'utilisation.\n\n## Limites\n\nPas adapté aux processus longs ou persistants.\n\n## Conclusion\n\nLe serverless est une option puissante pour des applications rapides, évolutives et économiques.",
-        tags: ['serverless', 'cloud', 'aws', 'vercel'],
+          "Un marché de producteurs locaux s'installe sur la place centrale tous les dimanches.",
+        content: `# Nouveau marché bio le dimanche matin
+
+Notre quartier accueille un nouveau marché bio hebdomadaire ! À partir du dimanche prochain, retrouvez vos producteurs locaux sur la place centrale.
+
+## Horaires et infos pratiques
+
+- Tous les dimanches de 8h à 13h
+- Place centrale du quartier
+- Parking gratuit à proximité
+
+## Les producteurs présents
+
+- Légumes bio de la ferme des Quatre Saisons
+- Fromages de chèvre de la famille Martin
+- Miel et confitures artisanales
+- Boulangerie bio
+- Œufs frais de poules élevées en plein air
+
+## Animations
+
+Des ateliers de cuisine et des dégustations seront régulièrement organisés pour petits et grands.
+
+Venez nombreux soutenir nos producteurs locaux et profiter de produits frais et de qualité !`,
+        tags: ['marché', 'bio', 'local', 'alimentation'],
         userId: users[Math.floor(Math.random() * users.length)].id,
       },
       {
-        title: 'Les bases de Docker pour les développeurs',
-        excerpt:
-          "Découvrez comment Docker facilite le développement, le test et le déploiement d'applications.",
-        content:
-          "# Les bases de Docker pour les développeurs\nDocker est un outil de virtualisation légère qui permet de créer des conteneurs reproductibles pour vos applications.\n\n## Concepts clés\n\n### Conteneurs vs VM\n\nLes conteneurs sont plus légers, démarrent plus vite et consomment moins de ressources que des VM.\n\n### Dockerfile\n\nPermet de décrire l'environnement d'exécution de l'application.\n\n## Cas d'utilisation\n\nDéveloppement local, CI/CD, microservices.\n\n## Conclusion\n\nMaîtriser Docker est essentiel pour tout développeur moderne souhaitant travailler efficacement en équipe ou en production.",
-        tags: ['docker', 'devops', 'ci/cd', 'virtualisation'],
+        title: 'Rénovation du parc municipal',
+        excerpt: "Le parc sera fermé pendant deux mois pour d'importants travaux d'amélioration.",
+        content: `# Rénovation du parc municipal
+
+La mairie lance un grand projet de rénovation du parc municipal pour améliorer notre cadre de vie.
+
+## Planning des travaux
+
+- Début : 1er mars
+- Durée : 2 mois
+- Réouverture prévue : 1er mai
+
+## Améliorations prévues
+
+- Nouvelle aire de jeux pour enfants
+- Installation de bancs et tables de pique-nique
+- Création d'un parcours sportif
+- Plantation de nouveaux arbres
+- Rénovation des allées
+- Installation d'un système d'arrosage automatique
+
+## Accès pendant les travaux
+
+Le parc sera totalement fermé au public pour des raisons de sécurité. Un itinéraire alternatif sera mis en place pour les piétons.`,
+        tags: ['travaux', 'parc', 'rénovation', 'mairie'],
         userId: users[Math.floor(Math.random() * users.length)].id,
       },
       {
-        title: 'Introduction à Rust pour les développeurs web',
+        title: 'Grande fête des voisins ce weekend',
         excerpt:
-          'Rust gagne en popularité grâce à sa performance et sa sécurité. Voici pourquoi vous devriez vous y intéresser.',
-        content:
-          '# Introduction à Rust pour les développeurs web\nRust est un langage système moderne connu pour sa sécurité mémoire sans garbage collector.\n\n## Pourquoi Rust ?\n\n### Sécurité\n\nEmpêche les erreurs de segmentation et les fuites mémoire à la compilation.\n\n### Performances\n\nComparable au C/C++ tout en étant plus sûr.\n\n## Usages web\n\nRust est utilisé côté serveur (avec Actix ou Rocket) et dans WebAssembly pour accélérer le frontend.\n\n## Conclusion\n\nRust combine puissance et sûreté, en faisant un candidat sérieux pour le développement web moderne.',
-        tags: ['rust', 'webassembly', 'sécurité', 'backend'],
+          'Rejoignez-nous pour un moment convivial entre voisins avec animations et buffet participatif.',
+        content: `# Grande fête des voisins ce weekend
+
+## Programme de la journée
+
+### 11h - Ouverture
+- Accueil des participants
+- Installation du buffet participatif
+- Début des animations pour enfants
+
+### 12h30 - Déjeuner
+- Grand buffet partagé
+- Animation musicale
+
+### 14h - Activités
+- Tournoi de pétanque
+- Jeux pour enfants
+- Atelier jardinage
+- Démonstration de danse
+
+### 18h - Soirée
+- Apéritif offert par le comité de quartier
+- Concert des musiciens du quartier
+
+## Informations pratiques
+
+- Date : Samedi 15 juin
+- Lieu : Place du marché
+- Chacun apporte un plat à partager
+- Prévoir ses couverts pour limiter les déchets
+
+En cas de pluie, repli dans la salle des fêtes.`,
+        tags: ['fête', 'voisins', 'animation', 'convivialité'],
         userId: users[Math.floor(Math.random() * users.length)].id,
       },
       {
-        title: 'Découvrir les Progressive Web Apps (PWA)',
+        title: 'Nouveau service de covoiturage de quartier',
         excerpt:
-          'Les PWA combinent le meilleur du web et des apps mobiles. Plongez dans leurs avantages.',
-        content:
-          "# Découvrir les Progressive Web Apps (PWA)\nLes Progressive Web Apps offrent une expérience utilisateur riche, même hors ligne.\n\n## Fonctionnalités clés\n\n### Offline first\n\nGrâce aux Service Workers, une PWA fonctionne sans connexion.\n\n### Installation\n\nAjout possible à l'écran d'accueil sans passer par un store.\n\n## Bonnes pratiques\n\nUtiliser HTTPS, un manifest.json et mettre en cache intelligemment.\n\n## Conclusion\n\nLes PWA sont idéales pour créer des expériences rapides, fiables et engageantes sur mobile comme desktop.",
-        tags: ['pwa', 'service worker', 'offline', 'mobile'],
+          'Une application de covoiturage locale pour faciliter les déplacements entre voisins.',
+        content: `# Nouveau service de covoiturage de quartier
+
+Pour faciliter les déplacements et créer du lien entre voisins, un nouveau service de covoiturage local est lancé.
+
+## Comment ça marche ?
+
+1. Inscrivez-vous sur l'application
+2. Indiquez vos trajets réguliers
+3. Trouvez des voisins qui font le même trajet
+4. Partagez vos déplacements
+
+## Avantages
+
+- Économies sur les frais de transport
+- Réduction de l'impact environnemental
+- Création de liens entre voisins
+- Solution pour les personnes à mobilité réduite
+
+## Tarifs
+
+Service gratuit la première année grâce au soutien de la mairie.`,
+        tags: ['transport', 'covoiturage', 'écologie', 'entraide'],
         userId: users[Math.floor(Math.random() * users.length)].id,
       },
       {
-        title: 'Les fondamentaux de Git pour les équipes agiles',
-        excerpt:
-          'Comprenez comment Git soutient le travail collaboratif dans un environnement agile.',
-        content:
-          '# Les fondamentaux de Git pour les équipes agiles\nGit est un système de gestion de versions distribué essentiel en développement logiciel.\n\n## Branches et collaboration\n\nTravailler sur des branches permet de paralléliser les tâches sans conflits.\n\n### Merge vs Rebase\n\nDeux stratégies de consolidation à connaître selon les cas.\n\n## Bonnes pratiques\n\nCommits clairs, pull requests, et révisions de code.\n\n## Conclusion\n\nGit est un pilier de la collaboration moderne, surtout en environnement agile.',
-        tags: ['git', 'agile', 'collaboration', 'versioning'],
+        title: "Ouverture d'une nouvelle bibliothèque de rue",
+        excerpt: "Une boîte à livres participative est installée près de l'école primaire.",
+        content: `# Ouverture d'une nouvelle bibliothèque de rue
+
+## Le principe
+
+Une boîte à livres est désormais disponible près de l'école primaire. Le principe est simple :
+- Prenez un livre qui vous intéresse
+- Déposez ceux que vous souhaitez partager
+- Profitez d'un accès gratuit à la lecture
+
+## Règles de fonctionnement
+
+- Livres en bon état uniquement
+- Tous genres acceptés
+- Pensez aux enfants (livres jeunesse bienvenus)
+- Respectez la capacité de la boîte
+
+## Entretien
+
+Un groupe de bénévoles du quartier s'occupe de :
+- Trier régulièrement les livres
+- Maintenir la boîte en bon état
+- Renouveler les ouvrages
+
+Pour devenir bénévole, contactez l'association de quartier.`,
+        tags: ['culture', 'livres', 'partage', 'lecture'],
         userId: users[Math.floor(Math.random() * users.length)].id,
       },
       {
-        title: "Pourquoi adopter TypeScript dès aujourd'hui",
-        excerpt:
-          'Découvrez les bénéfices de TypeScript pour écrire du JavaScript plus sûr et maintenable.',
-        content:
-          "# Pourquoi adopter TypeScript dès aujourd'hui\nTypeScript est un surensemble de JavaScript qui ajoute le typage statique.\n\n## Avantages\n\n### Sécurité\n\nLes types aident à éviter des bugs courants dès la phase de développement.\n\n### Lisibilité et refactorisation\n\nLe code devient plus clair et plus facile à maintenir à long terme.\n\n## Adoption progressive\n\nTypeScript peut être introduit fichier par fichier dans un projet JS existant.\n\n## Conclusion\n\nAdopter TypeScript, c'est investir dans la qualité et la robustesse de vos projets JS.",
-        tags: ['typescript', 'javascript', 'refactoring', 'types'],
+        title: 'Collecte solidaire pour les sinistrés',
+        excerpt: "Organisation d'une collecte d'urgence suite aux récentes inondations.",
+        content: `# Collecte solidaire pour les sinistrés
+
+Suite aux récentes inondations, une collecte est organisée pour aider les familles touchées.
+
+## Besoins urgents
+
+- Vêtements chauds
+- Couvertures
+- Produits d'hygiène
+- Denrées non périssables
+- Eau potable
+
+## Points de collecte
+
+- Mairie : 9h-17h
+- École primaire : aux heures d'ouverture
+- Supermarché local : 8h-20h
+
+## Comment aider ?
+
+- Faire un don matériel
+- Devenir bénévole pour la collecte
+- Proposer un hébergement temporaire
+- Participer à la distribution
+
+Merci de votre solidarité !`,
+        tags: ['solidarité', 'entraide', 'urgence', 'collecte'],
         userId: users[Math.floor(Math.random() * users.length)].id,
       },
       {
-        title: 'Déployer une API REST avec Fastify',
-        excerpt:
-          'Fastify est un framework Node.js rapide et léger pour créer des API performantes.',
-        content:
-          "# Déployer une API REST avec Fastify\nFastify est conçu pour la performance, la sécurité et l'extensibilité.\n\n## Installation\n\n```bash\nnpm install fastify\n```\n\n## Exemple simple\n\n```js\nconst fastify = require('fastify')();\nfastify.get('/', async () => ({ hello: 'world' }));\nfastify.listen(3000);\n```\n\n## Avantages\n\nRapide, supporte les plugins, typage natif avec TypeScript.\n\n## Conclusion\n\nFastify est une excellente alternative à Express pour des APIs REST modernes.",
-        tags: ['fastify', 'api', 'nodejs', 'performance'],
+        title: 'Cours de jardinage gratuits au jardin partagé',
+        excerpt: 'Apprenez à cultiver vos légumes avec notre jardinier municipal.',
+        content: `# Cours de jardinage gratuits au jardin partagé
+
+## Programme des ateliers
+
+### Mars
+- Préparation du sol
+- Semis de printemps
+- Compostage
+
+### Avril
+- Plantation des tomates
+- Entretien du potager
+- Lutte naturelle contre les parasites
+
+### Mai
+- Arrosage économe
+- Culture sur balcon
+- Plantes aromatiques
+
+## Informations pratiques
+
+- Tous les samedis matin
+- De 10h à 12h
+- Matériel fourni
+- Sur inscription (places limitées)
+
+Repartez avec vos semis et des conseils personnalisés !`,
+        tags: ['jardinage', 'nature', 'apprentissage', 'potager'],
         userId: users[Math.floor(Math.random() * users.length)].id,
       },
       {
-        title: 'Comprendre le fonctionnement de WebAssembly',
+        title: 'Nouveau commerce : épicerie zéro déchet',
         excerpt:
-          "WebAssembly permet d'exécuter du code natif dans le navigateur avec des performances proches du C.",
-        content:
-          "# Comprendre le fonctionnement de WebAssembly\nWebAssembly (WASM) est un format binaire qui permet d'exécuter du code dans le navigateur.\n\n## Avantages\n\n- Très rapide\n- Portable\n- Sécurisé\n\n## Usages\n\nJeux, éditeurs, traitement d'images/audio dans le navigateur.\n\n## Compilation\n\nDes langages comme C, C++, Rust peuvent être compilés en WASM.\n\n## Conclusion\n\nWebAssembly étend considérablement les capacités du navigateur moderne.",
-        tags: ['wasm', 'webassembly', 'navigateur', 'performance'],
+          'Une nouvelle épicerie proposant des produits en vrac ouvre ses portes dans le quartier.',
+        content: `# Nouveau commerce : épicerie zéro déchet
+
+Une nouvelle épicerie vrac "Au bon sens" ouvre ses portes dans notre quartier !
+
+## Concept
+
+- Produits vendus en vrac
+- Contenants consignés disponibles
+- Produits locaux privilégiés
+- Zéro emballage jetable
+
+## Produits proposés
+
+- Céréales et légumineuses
+- Fruits secs
+- Produits d'entretien
+- Cosmétiques solides
+- Épices
+- Thés et cafés
+
+## Horaires
+
+- Mardi au samedi : 9h-19h
+- Dimanche : 9h-13h
+- Fermé le lundi
+
+N'oubliez pas d'apporter vos contenants !`,
+        tags: ['commerce', 'écologie', 'alimentation', 'zéro-déchet'],
         userId: users[Math.floor(Math.random() * users.length)].id,
       },
       {
-        title: 'Architecture des microservices expliquée simplement',
+        title: 'Recherche bénévoles pour soutien scolaire',
         excerpt:
-          'Découvrez comment les microservices permettent de mieux structurer les grandes applications.',
-        content:
-          "# Architecture des microservices expliquée simplement\nLes microservices sont une approche qui consiste à diviser une application en petits services indépendants.\n\n## Caractéristiques\n\n- Chaque service est déployable individuellement\n- Communique via des API\n- Orienté domaine métier\n\n## Avantages\n\n- Scalabilité\n- Résilience\n- Flexibilité des équipes\n\n## Conclusion\n\nLes microservices sont puissants mais nécessitent une bonne discipline d'architecture.",
-        tags: ['microservices', 'architecture', 'scalabilité', 'cloud'],
+          "L'association du quartier cherche des bénévoles pour aider les élèves en difficulté.",
+        content: `# Recherche bénévoles pour soutien scolaire
+
+## Notre besoin
+
+L'association recherche des bénévoles pour :
+- Aide aux devoirs
+- Soutien en mathématiques et français
+- Accompagnement méthodologique
+- Préparation aux examens
+
+## Profil recherché
+
+- Patient(e) et pédagogue
+- Disponible 2h par semaine minimum
+- Niveau bac minimum
+- Expérience avec les enfants appréciée
+
+## Créneaux disponibles
+
+- Lundi et jeudi : 17h-19h
+- Mercredi : 14h-16h
+- Samedi : 10h-12h
+
+Formation assurée par l'association.`,
+        tags: ['bénévolat', 'éducation', 'entraide', 'jeunesse'],
+        userId: users[Math.floor(Math.random() * users.length)].id,
+      },
+      {
+        title: 'Alerte travaux : réfection de la rue principale',
+        excerpt: 'Important chantier de voirie prévu pour le mois prochain.',
+        content: `# Alerte travaux : réfection de la rue principale
+
+## Nature des travaux
+
+- Réfection complète de la chaussée
+- Création d'une piste cyclable
+- Élargissement des trottoirs
+- Installation de nouveaux lampadaires LED
+- Plantation d'arbres d'alignement
+
+## Planning
+
+- Phase 1 : 1-15 avril (portion nord)
+- Phase 2 : 16-30 avril (portion sud)
+
+## Impact circulation
+
+- Rue barrée par tronçons
+- Déviation par les rues adjacentes
+- Accès riverains maintenu
+- Stationnement interdit pendant les travaux
+
+Merci de votre compréhension pour la gêne occasionnée.`,
+        tags: ['travaux', 'voirie', 'circulation', 'aménagement'],
         userId: users[Math.floor(Math.random() * users.length)].id,
       },
     ])
