@@ -13,6 +13,7 @@ const corsConfig = defineConfig({
     'http://localhost:3001',
     'https://nova-dash.up.railway.app',
     'https://nova-connect.up.railway.app',
+    'https://main.dk9lkc5yg76k.amplifyapp.com',
   ],
   methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
   headers: true,
