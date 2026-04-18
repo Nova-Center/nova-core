@@ -3,7 +3,7 @@ FROM node:22.16.0-alpine3.22 AS base
 # All deps stage
 FROM base AS deps
 WORKDIR /app
-ADD package.json package-lock.json ./
+COPY package.json package-lock.json ./
 RUN npm ci
 
 # Production only deps stage
@@ -16,7 +16,7 @@ RUN npm ci --omit=dev
 FROM base AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules /app/node_modules
-ADD . .
+COPY . .
 RUN \
   export PORT=8080 && \
   export APP_KEY=dummydummykey123456789012345678901234 && \
