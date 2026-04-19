@@ -5,7 +5,7 @@ Ce guide décrit exactement les étapes pour déployer le backend avec des image
 ## 1) Prérequis
 
 - Un bucket S3 existant (exemple: `cloud-nova-images`) dans la même région que ECS (recommandé).
-- Un repository ECR existant (exemple: `682405976856.dkr.ecr.eu-west-1.amazonaws.com/nova/core`).
+- Un repository ECR existant (exemple: `<ACCOUNT.ID>.dkr.ecr.eu-west-1.amazonaws.com/nova/core`).
 - Un cluster/service ECS Fargate existant derrière ALB.
 - Un rôle IAM utilisé comme **Task Role** (exemple: `ecsTaskRole`).
 - AWS CLI + Docker Desktop installés localement.
@@ -29,29 +29,6 @@ Ne pas définir (ou laisser vide) en prod ECS avec Task Role IAM:
 ## 3) Configuration IAM (Task Role)
 
 Important: ajouter les permissions sur le **Task Role** (`ecsTaskRole`), pas sur `AWSServiceRoleForECS`.
-
-Dans IAM > Roles > `ecsTaskRole` > `Autorisations` > ajouter une policy:
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "ListBucket",
-      "Effect": "Allow",
-      "Action": ["s3:ListBucket"],
-      "Resource": "arn:aws:s3:::cloud-nova-images"
-    },
-    {
-      "Sid": "MediaObjectsRW",
-      "Effect": "Allow",
-      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
-      "Resource": "arn:aws:s3:::cloud-nova-images/*"
-    }
-  ]
-}
-```
-
 
 Policy (uploads write + resized read-only):
 
@@ -97,7 +74,7 @@ Policy de compartiment :
       "Sid": "ReadOriginals",
       "Effect": "Allow",
       "Principal": {
-        "AWS": "arn:aws:iam::682405976856:role/service-role/nova-image-resizer-role-i6qn8cmd"
+        "AWS": "arn:aws:iam::<ACCOUNT.ID>:role/service-role/nova-image-resizer-role-i6qn8cmd"
       },
       "Action": "s3:GetObject",
       "Resource": "arn:aws:s3:::cloud-nova-images/uploads/*"
@@ -106,7 +83,7 @@ Policy de compartiment :
       "Sid": "WriteResized",
       "Effect": "Allow",
       "Principal": {
-        "AWS": "arn:aws:iam::682405976856:role/service-role/nova-image-resizer-role-i6qn8cmd"
+        "AWS": "arn:aws:iam::<ACCOUNT.ID>:role/service-role/nova-image-resizer-role-i6qn8cmd"
       },
       "Action": "s3:PutObject",
       "Resource": "arn:aws:s3:::cloud-nova-images/resized/*"
@@ -115,7 +92,7 @@ Policy de compartiment :
       "Sid": "EcsUploadsWriteReadDelete",
       "Effect": "Allow",
       "Principal": {
-        "AWS": "arn:aws:iam::682405976856:role/ecsTaskRole"
+        "AWS": "arn:aws:iam::<ACCOUNT.ID>:role/ecsTaskRole"
       },
       "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
       "Resource": "arn:aws:s3:::cloud-nova-images/uploads/*"
@@ -124,7 +101,7 @@ Policy de compartiment :
       "Sid": "EcsReadResized",
       "Effect": "Allow",
       "Principal": {
-        "AWS": "arn:aws:iam::682405976856:role/ecsTaskRole"
+        "AWS": "arn:aws:iam::<ACCOUNT.ID>:role/ecsTaskRole"
       },
       "Action": "s3:GetObject",
       "Resource": "arn:aws:s3:::cloud-nova-images/resized/*"
@@ -136,17 +113,16 @@ Policy de compartiment :
 ## 5) Build et Push de l'image vers ECR
 
 ```bash
-aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 682405976856.dkr.ecr.eu-west-1.amazonaws.com
+aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin <ACCOUNT.ID>.dkr.ecr.eu-west-1.amazonaws.com
 
 docker build -t nova-core:private-s3 .
-docker tag nova-core:private-s3 682405976856.dkr.ecr.eu-west-1.amazonaws.com/nova/core:private-s3-v1
-docker push 682405976856.dkr.ecr.eu-west-1.amazonaws.com/nova/core:private-s3-v1
+docker tag nova-core:private-s3 <ACCOUNT.ID>.dkr.ecr.eu-west-1.amazonaws.com/nova/core:private-s3-v1
+docker push <ACCOUNT.ID>.dkr.ecr.eu-west-1.amazonaws.com/nova/core:private-s3-v1
 ```
 
 Notes:
 
-- `eu-west-1` doit être la région de votre repo ECR.
-- Le tag versionné (`private-s3-v1`, `private-s3-YYYYMMDD-HHMM`) est recommandé.
+- Le tag versionné (`private-s3-v1`, `private-s3-YYYYMMDD-HHMM`) est utilisé.
 
 ## 6) Mise à jour ECS
 
@@ -159,19 +135,11 @@ Notes:
 3. Mettre à jour le service ECS vers cette nouvelle révision.
 4. Forcer un nouveau déploiement.
 
-## 7) Ce que le code fait maintenant
+## 7) Flow cible image (upload -> resize -> read)
 
-- Upload S3 en visibilité `private` sous le préfixe `uploads/`
-- Stockage DB en **clé objet** (pas URL publique), ex: `uploads/posts/<uuid>.png`
-- Lecture API: priorité au fichier `resized/...` (si disponible), sinon fallback sur `uploads/...`
-- API retourne des URLs **presignées** (TTL 15 min) pour `avatar` / `image`
-- Compatibilité legacy: anciennes URLs publiques encore gérées (lazy migration)
-
-### Flow cible image (upload -> resize -> read)
-
-1. Le backend upload dans `uploads/...` (privé)
+1. Le backend upload dans `uploads/...` (privé), ex: `uploads/post-<uuid>.png`
 2. L'événement S3 déclenche la Lambda resizer
-3. La Lambda écrit l'image optimisée dans `resized/...`
+3. La Lambda écrit l'image optimisée dans `resized/...`, ex: `resized/post-<uuid>.jpg`
 4. Lors d'un GET API, le backend:
    - tente `resized/...`
    - fallback `uploads/...` si le resized n'existe pas encore

@@ -4,10 +4,8 @@ export class MediaService {
   public static readonly SIGNED_URL_TTL_SECONDS = 900
   private static readonly ROOT_UPLOAD_PREFIX = 'uploads/'
   private static readonly MANAGED_PREFIXES = [
-    'uploads/users/',
-    'uploads/posts/',
-    'uploads/events/',
-    'uploads/shop_items/',
+    'uploads/',
+    'resized/',
     'users/',
     'posts/',
     'events/',
@@ -16,7 +14,8 @@ export class MediaService {
 
   public static buildObjectKey(prefix: string, fileName: string): string {
     const normalizedPrefix = prefix.replace(/^\/+|\/+$/g, '')
-    return `${this.ROOT_UPLOAD_PREFIX}${normalizedPrefix}/${fileName}`
+    const filePrefix = this.toFilePrefix(normalizedPrefix)
+    return `${this.ROOT_UPLOAD_PREFIX}${filePrefix}-${fileName}`
   }
 
   public static resolveKey(storedValue?: string | null): string | null {
@@ -116,8 +115,19 @@ export class MediaService {
       return null
     }
 
-    const withoutUploadsPrefix = key.slice(this.ROOT_UPLOAD_PREFIX.length)
-    const withoutExtension = withoutUploadsPrefix.replace(/\.[^.]+$/, '')
+    const fileName = key.slice(this.ROOT_UPLOAD_PREFIX.length)
+    const withoutExtension = fileName.replace(/\.[^.]+$/, '')
     return `resized/${withoutExtension}.jpg`
+  }
+
+  private static toFilePrefix(prefix: string): string {
+    const mapping: Record<string, string> = {
+      users: 'user',
+      posts: 'post',
+      events: 'event',
+      shop_items: 'shop-item',
+    }
+
+    return mapping[prefix] ?? prefix.replace(/_/g, '-').replace(/s$/, '')
   }
 }
