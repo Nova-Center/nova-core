@@ -2,11 +2,21 @@ import drive from '@adonisjs/drive/services/main'
 
 export class MediaService {
   public static readonly SIGNED_URL_TTL_SECONDS = 900
-  private static readonly MANAGED_PREFIXES = ['users/', 'posts/', 'events/', 'shop_items/'] as const
+  private static readonly ROOT_UPLOAD_PREFIX = 'uploads/'
+  private static readonly MANAGED_PREFIXES = [
+    'uploads/users/',
+    'uploads/posts/',
+    'uploads/events/',
+    'uploads/shop_items/',
+    'users/',
+    'posts/',
+    'events/',
+    'shop_items/',
+  ] as const
 
   public static buildObjectKey(prefix: string, fileName: string): string {
-    const normalizedPrefix = prefix.endsWith('/') ? prefix : `${prefix}/`
-    return `${normalizedPrefix}${fileName}`
+    const normalizedPrefix = prefix.replace(/^\/+|\/+$/g, '')
+    return `${this.ROOT_UPLOAD_PREFIX}${normalizedPrefix}/${fileName}`
   }
 
   public static resolveKey(storedValue?: string | null): string | null {
@@ -58,7 +68,8 @@ export class MediaService {
     }
 
     try {
-      return await drive.use('s3').getSignedUrl(key, {
+      const preferredKey = await this.resolvePreferredReadKey(key)
+      return await drive.use('s3').getSignedUrl(preferredKey, {
         expiresIn: this.SIGNED_URL_TTL_SECONDS,
       })
     } catch {
@@ -88,5 +99,25 @@ export class MediaService {
     }
 
     return null
+  }
+
+  private static async resolvePreferredReadKey(key: string): Promise<string> {
+    const resizedKey = this.toResizedKey(key)
+    if (!resizedKey) {
+      return key
+    }
+
+    const resizedExists = await drive.use('s3').exists(resizedKey)
+    return resizedExists ? resizedKey : key
+  }
+
+  private static toResizedKey(key: string): string | null {
+    if (!key.startsWith(this.ROOT_UPLOAD_PREFIX)) {
+      return null
+    }
+
+    const withoutUploadsPrefix = key.slice(this.ROOT_UPLOAD_PREFIX.length)
+    const withoutExtension = withoutUploadsPrefix.replace(/\.[^.]+$/, '')
+    return `resized/${withoutExtension}.jpg`
   }
 }
