@@ -3,11 +3,24 @@ import type { HttpContext } from '@adonisjs/core/http'
 import { updateUserValidator } from '#validators/update_user'
 import { readFile } from 'node:fs/promises'
 import { v4 as uuid } from 'uuid'
-import drive from '@adonisjs/drive/services/main'
 import { UserRole } from '../types/user_role.enum.js'
 import db from '@adonisjs/lucid/services/db'
+import { MediaService } from '#services/media_service'
 
 export default class UsersController {
+  private async attachSignedAvatar<T extends { avatar?: string | null; [key: string]: any }>(
+    user: T
+  ): Promise<T> {
+    user.avatar = await MediaService.toResponseUrl(user.avatar ?? null)
+    return user
+  }
+
+  private async attachSignedAvatarToList<T extends { avatar?: string | null }>(
+    users: T[]
+  ): Promise<T[]> {
+    return Promise.all(users.map((user) => this.attachSignedAvatar(user)))
+  }
+
   /**
    * @index
    * @description Get all users for admin
@@ -17,9 +30,11 @@ export default class UsersController {
     const { page, perPage } = request.only(['page', 'perPage'])
 
     const users = await User.query().paginate(page, perPage)
+    const serializedUsers = users.toJSON()
+    serializedUsers.data = await this.attachSignedAvatarToList(serializedUsers.data)
 
     logger.info({ auth: auth.user?.username }, 'Users fetched by')
-    return response.json(users)
+    return response.json(serializedUsers)
   }
 
   /**
@@ -30,9 +45,11 @@ export default class UsersController {
    */
   public async usersWithoutPagination({ auth, response, logger }: HttpContext) {
     const users = await User.all()
+    const serializedUsers = users.map((user) => user.serialize())
+    const usersWithSignedAvatar = await this.attachSignedAvatarToList(serializedUsers)
 
     logger.info({ auth: auth.user?.username }, 'Users fetched by')
-    return response.json(users)
+    return response.json(usersWithSignedAvatar)
   }
 
   /**
@@ -61,9 +78,11 @@ export default class UsersController {
         'last_seen_at'
       )
       .paginate(page, perPage)
+    const serializedUsers = users.toJSON()
+    serializedUsers.data = await this.attachSignedAvatarToList(serializedUsers.data)
 
     logger.info({ auth: auth.user?.username }, 'Users fetched by')
-    return response.json(users)
+    return response.json(serializedUsers)
   }
 
   /**
@@ -85,11 +104,11 @@ export default class UsersController {
       return response.notFound({ message: 'User not found' })
     }
 
-    return response.json({
+    return response.json(await this.attachSignedAvatar({
       ...user.serialize(),
       isOnline: user.isOnline,
       lastSeenAt: user.lastSeenAt,
-    })
+    }))
   }
 
   /**
@@ -105,7 +124,8 @@ export default class UsersController {
       return response.unauthorized({ message: 'Not authenticated' })
     }
 
-    return response.json(user)
+    const serializedUser = user.serialize()
+    return response.json(await this.attachSignedAvatar(serializedUser))
   }
 
   /**
@@ -149,23 +169,19 @@ export default class UsersController {
 
     if (data.avatar === null) {
       if (user.avatar) {
-        const oldAvatarUrl = user.avatar.split('/').pop()
-        await drive.use('s3').delete(`users/${oldAvatarUrl}`)
+        await MediaService.deleteByStoredValue(user.avatar)
       }
       updateData.avatar = null
     } else if (data.avatar) {
       if (user.avatar) {
-        const oldAvatarUrl = user.avatar.split('/').pop()
-        await drive.use('s3').delete(`users/${oldAvatarUrl}`)
+        await MediaService.deleteByStoredValue(user.avatar)
       }
 
       const fileName = `${uuid()}.${data.avatar.extname}`
+      const objectKey = MediaService.buildObjectKey('users', fileName)
       const fileBuffer = await readFile(data.avatar.tmpPath!)
-      await drive.use('s3').put(`users/${fileName}`, fileBuffer, {
-        contentType: data.avatar.type,
-        visibility: 'public',
-      })
-      updateData.avatar = await drive.use('s3').getUrl(`users/${fileName}`)
+      await MediaService.putPrivateObject(objectKey, fileBuffer, data.avatar.type)
+      updateData.avatar = objectKey
     }
 
     user.merge(updateData)
@@ -173,7 +189,12 @@ export default class UsersController {
 
     const updatedUser = await User.find(id)
 
-    return response.json(updatedUser)
+    if (!updatedUser) {
+      return response.notFound({ message: 'User not found' })
+    }
+
+    const serializedUser = updatedUser.serialize()
+    return response.json(await this.attachSignedAvatar(serializedUser))
   }
 
   /**
@@ -205,8 +226,7 @@ export default class UsersController {
     }
 
     if (user.avatar) {
-      const oldAvatarUrl = user.avatar.split('/').pop()
-      await drive.use('s3').delete(`users/${oldAvatarUrl}`)
+      await MediaService.deleteByStoredValue(user.avatar)
     }
 
     await user.delete()
@@ -236,19 +256,22 @@ export default class UsersController {
       password: data.password,
     }
 
-    if (data.avatar) {
+    if (data.avatar === null) {
       if (user.avatar) {
-        const oldAvatarUrl = user.avatar.split('/').pop()
-        await drive.use('s3').delete(`users/${oldAvatarUrl}`)
-        logger.info({ oldAvatarUrl }, 'Old avatar deleted')
+        await MediaService.deleteByStoredValue(user.avatar)
+      }
+      updateData.avatar = null
+    } else if (data.avatar) {
+      if (user.avatar) {
+        await MediaService.deleteByStoredValue(user.avatar)
+        logger.info({ userId: user.id }, 'Old avatar deleted')
       }
 
       const fileName = `${uuid()}.${data.avatar.extname}`
+      const objectKey = MediaService.buildObjectKey('users', fileName)
       const fileBuffer = await readFile(data.avatar.tmpPath!)
-      await drive.use('s3').put(`users/${fileName}`, fileBuffer, {
-        contentType: data.avatar.type,
-        visibility: 'public',
-      })
+      await MediaService.putPrivateObject(objectKey, fileBuffer, data.avatar.type)
+      updateData.avatar = objectKey
     }
 
     user.merge(updateData)
@@ -258,7 +281,12 @@ export default class UsersController {
 
     logger.info({ updatedUser }, 'User updated')
 
-    return response.json(updatedUser)
+    if (!updatedUser) {
+      return response.notFound({ message: 'User not found' })
+    }
+
+    const serializedUser = updatedUser.serialize()
+    return response.json(await this.attachSignedAvatar(serializedUser))
   }
 
   /**

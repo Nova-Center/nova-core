@@ -42,9 +42,10 @@ export default await Env.create(
   |----------------------------------------------------------
   */
         DRIVE_DISK: Env.schema.enum(['s3'] as const),
-        AWS_ACCESS_KEY_ID: Env.schema.string(),
-        AWS_SECRET_ACCESS_KEY: Env.schema.string(),
+        AWS_ACCESS_KEY_ID: Env.schema.string.optional(),
+        AWS_SECRET_ACCESS_KEY: Env.schema.string.optional(),
         AWS_REGION: Env.schema.string(),
         S3_BUCKET: Env.schema.string(),
+        S3_ENDPOINT: Env.schema.string.optional(),
       }
 )

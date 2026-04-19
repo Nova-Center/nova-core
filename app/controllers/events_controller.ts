@@ -6,12 +6,22 @@ import { createEventValidator } from '#validators/event'
 import { DateTime } from 'luxon'
 import User from '#models/user'
 import { readFile } from 'node:fs/promises'
-import drive from '@adonisjs/drive/services/main'
 import { NovaPointService } from '#services/nova_point_service'
 import { NotificationService } from '#services/notification_service'
 import { NotificationType } from '../types/notification.enum.js'
+import { MediaService } from '#services/media_service'
 
 export default class EventsController {
+  private async attachSignedEventImage<T extends { image?: string | null }>(event: T): Promise<T> {
+    event.image = await MediaService.toResponseUrl(event.image ?? null)
+    return event
+  }
+
+  private async attachSignedAvatar<T extends { avatar?: string | null }>(user: T): Promise<T> {
+    user.avatar = await MediaService.toResponseUrl(user.avatar ?? null)
+    return user
+  }
+
   /**
    * @index
    * @summary Get all events
@@ -28,7 +38,22 @@ export default class EventsController {
       .preload('participants')
       .orderBy('created_at', 'desc')
       .paginate(page, perPage)
-    return response.ok(events)
+
+    const serializedEvents = events.serialize()
+    serializedEvents.data = await Promise.all(
+      serializedEvents.data.map(async (event) => {
+        await this.attachSignedEventImage(event)
+        if (event.participants?.length) {
+          await Promise.all(
+            event.participants.map((participant: { avatar?: string | null }) =>
+              this.attachSignedAvatar(participant)
+            )
+          )
+        }
+        return event
+      })
+    )
+    return response.ok(serializedEvents)
   }
 
   /**
@@ -39,7 +64,21 @@ export default class EventsController {
    */
   async noPagination({ response }: HttpContext) {
     const events = await Event.query().preload('participants').orderBy('created_at', 'desc')
-    return response.ok(events)
+    const serializedEvents = events.map((event) => event.serialize())
+    const eventsWithSignedMedia = await Promise.all(
+      serializedEvents.map(async (event) => {
+        await this.attachSignedEventImage(event)
+        if (event.participants?.length) {
+          await Promise.all(
+            event.participants.map((participant: { avatar?: string | null }) =>
+              this.attachSignedAvatar(participant)
+            )
+          )
+        }
+        return event
+      })
+    )
+    return response.ok(eventsWithSignedMedia)
   }
 
   /**
@@ -50,7 +89,16 @@ export default class EventsController {
    */
   async show({ params, response }: HttpContext) {
     const event = await Event.query().where('id', params.id).preload('participants').firstOrFail()
-    return response.ok(event)
+    const serializedEvent = event.serialize()
+    await this.attachSignedEventImage(serializedEvent)
+    if (serializedEvent.participants?.length) {
+      await Promise.all(
+        serializedEvent.participants.map((participant: { avatar?: string | null }) =>
+          this.attachSignedAvatar(participant)
+        )
+      )
+    }
+    return response.ok(serializedEvent)
   }
 
   /**
@@ -70,20 +118,18 @@ export default class EventsController {
     const event = new Event()
 
     const fileName = `${uuid()}.${data.image.clientName.split('.').pop()}`
+    const objectKey = MediaService.buildObjectKey('events', fileName)
 
     if (!data.image.tmpPath) {
       throw new Error('Temporary file path is missing')
     }
     const fileBuffer = await readFile(data.image.tmpPath)
 
-    await drive.use('s3').put(`events/${fileName}`, fileBuffer, {
-      contentType: data.image.clientName.split('.').pop(),
-      visibility: 'public',
-    })
+    await MediaService.putPrivateObject(objectKey, fileBuffer, data.image.clientName.split('.').pop())
 
     event.fill({
       ...data,
-      image: await drive.use('s3').getUrl(`events/${fileName}`),
+      image: objectKey,
       date: DateTime.fromJSDate(data.date),
       userId: auth.user!.id,
     })
@@ -92,7 +138,9 @@ export default class EventsController {
 
     await event.save()
 
-    return response.created(event)
+    const serializedEvent = event.serialize()
+    await this.attachSignedEventImage(serializedEvent)
+    return response.created(serializedEvent)
   }
 
   /**
@@ -113,6 +161,7 @@ export default class EventsController {
       return response.unauthorized({ message: 'You are not authorized to delete this event' })
     }
 
+    await MediaService.deleteByStoredValue(event.image)
     await event.delete()
     return response.noContent()
   }
