@@ -1,13 +1,18 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { createShopItemValidator, updateShopItemValidator } from '#validators/shop_item'
 import ShopItem from '#models/shop_item'
-import drive from '@adonisjs/drive/services/main'
 import { v4 as uuid } from 'uuid'
 import { readFile } from 'node:fs/promises'
 import { DateTime } from 'luxon'
 import { NovaPointService } from '#services/nova_point_service'
+import { MediaService } from '#services/media_service'
 
 export default class ShopItemsController {
+  private async attachSignedImage<T extends { image?: string | null }>(item: T): Promise<T> {
+    item.image = await MediaService.toResponseUrl(item.image ?? null)
+    return item
+  }
+
   /**
    * @store
    * @description Create a new item
@@ -25,24 +30,23 @@ export default class ShopItemsController {
     }
 
     const fileName = `${uuid()}.${image.extname}`
+    const objectKey = MediaService.buildObjectKey('shop_items', fileName)
     const imageBuffer = await readFile(image.tmpPath!)
 
-    await drive.use('s3').put(`shop_items/${fileName}`, imageBuffer, {
-      contentType: image.type,
-      visibility: 'public',
-    })
-
-    const imageUrl = await drive.use('s3').getUrl(`shop_items/${fileName}`)
+    await MediaService.putPrivateObject(objectKey, imageBuffer, image.type)
 
     const shopItem = await ShopItem.create({
       name,
       description,
       price,
-      image: imageUrl,
+      image: objectKey,
       ownerId: user.id,
     })
 
-    return response.created(shopItem)
+    const serializedShopItem = shopItem.serialize()
+    await this.attachSignedImage(serializedShopItem)
+
+    return response.created(serializedShopItem)
   }
 
   /**
@@ -56,8 +60,12 @@ export default class ShopItemsController {
     const { page, perPage } = request.only(['page', 'perPage'])
 
     const shopItems = await ShopItem.query().paginate(page, perPage)
+    const serializedShopItems = shopItems.serialize()
+    serializedShopItems.data = await Promise.all(
+      serializedShopItems.data.map((item) => this.attachSignedImage(item))
+    )
 
-    return response.json(shopItems)
+    return response.json(serializedShopItems)
   }
 
   /**
@@ -68,7 +76,11 @@ export default class ShopItemsController {
    */
   public async noPagination({ response }: HttpContext) {
     const shopItems = await ShopItem.query().orderBy('created_at', 'desc')
-    return response.json(shopItems)
+    const serializedShopItems = shopItems.map((shopItem) => shopItem.serialize())
+    const itemsWithSignedImages = await Promise.all(
+      serializedShopItems.map((item) => this.attachSignedImage(item))
+    )
+    return response.json(itemsWithSignedImages)
   }
 
   /**
@@ -87,7 +99,9 @@ export default class ShopItemsController {
       })
     }
 
-    return response.json(shopItem)
+    const serializedShopItem = shopItem.serialize()
+    await this.attachSignedImage(serializedShopItem)
+    return response.json(serializedShopItem)
   }
 
   /**
@@ -113,7 +127,7 @@ export default class ShopItemsController {
     }
 
     if (shopItem.image) {
-      await drive.use('s3').delete(`shop_items/${shopItem.image.split('/').pop()}`)
+      await MediaService.deleteByStoredValue(shopItem.image)
     }
 
     await shopItem.delete()
@@ -146,19 +160,14 @@ export default class ShopItemsController {
     }
 
     if (newItem.image) {
-      await drive.use('s3').delete(`shop_items/${shopItem.image.split('/').pop()}`)
+      await MediaService.deleteByStoredValue(shopItem.image)
 
       const fileName = `${uuid()}.${newItem.image.extname}`
+      const objectKey = MediaService.buildObjectKey('shop_items', fileName)
       const imageBuffer = await readFile(newItem.image.tmpPath!)
 
-      await drive.use('s3').put(`shop_items/${fileName}`, imageBuffer, {
-        contentType: newItem.image.type,
-        visibility: 'public',
-      })
-
-      const imageUrl = await drive.use('s3').getUrl(`shop_items/${fileName}`)
-
-      shopItem.image = imageUrl
+      await MediaService.putPrivateObject(objectKey, imageBuffer, newItem.image.type)
+      shopItem.image = objectKey
     }
 
     shopItem.name = newItem.name ?? shopItem.name
@@ -172,7 +181,9 @@ export default class ShopItemsController {
 
     await shopItem.save()
 
-    return response.json(shopItem)
+    const serializedShopItem = shopItem.serialize()
+    await this.attachSignedImage(serializedShopItem)
+    return response.json(serializedShopItem)
   }
 
   /**
@@ -218,6 +229,8 @@ export default class ShopItemsController {
 
     await shopItem.save()
 
-    return response.json(shopItem)
+    const serializedShopItem = shopItem.serialize()
+    await this.attachSignedImage(serializedShopItem)
+    return response.json(serializedShopItem)
   }
 }

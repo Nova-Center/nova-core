@@ -3,7 +3,6 @@ import Post from '#models/post'
 import PostComment from '#models/post_comment'
 import { createPostCommentValidator } from '#validators/create_post_comment'
 import { v4 as uuid } from 'uuid'
-import drive from '@adonisjs/drive/services/main'
 import { readFile } from 'node:fs/promises'
 import PostLike from '#models/post_like'
 import CommentLike from '#models/comment_like'
@@ -11,8 +10,19 @@ import { NovaPointService } from '#services/nova_point_service'
 import { UserRole } from '../types/user_role.enum.js'
 import { NotificationService } from '#services/notification_service'
 import { NotificationType } from '../types/notification.enum.js'
+import { MediaService } from '#services/media_service'
 
 export default class PostsController {
+  private async attachSignedPostImage<T extends { image?: string | null }>(post: T): Promise<T> {
+    post.image = await MediaService.toResponseUrl(post.image ?? null)
+    return post
+  }
+
+  private async attachSignedUserAvatar<T extends { avatar?: string | null }>(user: T): Promise<T> {
+    user.avatar = await MediaService.toResponseUrl(user.avatar ?? null)
+    return user
+  }
+
   /**
    * @index
    * @description Get all posts with pagination
@@ -33,9 +43,19 @@ export default class PostsController {
       .preload('likes')
       .orderBy('created_at', 'desc')
       .paginate(page, perPage)
+    const serializedPosts = posts.serialize()
+    serializedPosts.data = await Promise.all(
+      serializedPosts.data.map(async (post) => {
+        await this.attachSignedPostImage(post)
+        if (post.user) {
+          await this.attachSignedUserAvatar(post.user)
+        }
+        return post
+      })
+    )
 
     logger.info(posts)
-    return response.json(posts)
+    return response.json(serializedPosts)
   }
 
   /**
@@ -52,8 +72,18 @@ export default class PostsController {
       })
       .preload('likes')
       .orderBy('created_at', 'desc')
+    const serializedPosts = posts.map((post) => post.serialize())
+    const postsWithSignedImages = await Promise.all(
+      serializedPosts.map(async (post) => {
+        await this.attachSignedPostImage(post)
+        if (post.user) {
+          await this.attachSignedUserAvatar(post.user)
+        }
+        return post
+      })
+    )
 
-    return response.json(posts)
+    return response.json(postsWithSignedImages)
   }
 
   /**
@@ -80,14 +110,12 @@ export default class PostsController {
 
     if (imageFile) {
       const fileName = `${uuid()}.${imageFile.extname}`
+      const objectKey = MediaService.buildObjectKey('posts', fileName)
       const buffer = await readFile(imageFile.tmpPath!)
 
-      await drive.use('s3').put(`posts/${fileName}`, buffer, {
-        contentType: imageFile.type,
-        visibility: 'public',
-      })
+      await MediaService.putPrivateObject(objectKey, buffer, imageFile.type)
 
-      post.image = await drive.use('s3').getUrl(`posts/${fileName}`)
+      post.image = objectKey
     }
 
     await post.save()
@@ -99,7 +127,9 @@ export default class PostsController {
       `Created post: ${caption.substring(0, 50)}...`
     )
 
-    return response.created(post)
+    const serializedPost = post.serialize()
+    await this.attachSignedPostImage(serializedPost)
+    return response.created(serializedPost)
   }
 
   /**
@@ -121,7 +151,20 @@ export default class PostsController {
       return response.status(404).json({ message: 'Post not found' })
     }
 
-    return response.json(post)
+    const serializedPost = post.serialize()
+    await this.attachSignedPostImage(serializedPost)
+
+    if (serializedPost.comments?.length) {
+      await Promise.all(
+        serializedPost.comments.map(async (comment: { user?: { avatar?: string | null } }) => {
+          if (comment.user) {
+            await this.attachSignedUserAvatar(comment.user)
+          }
+        })
+      )
+    }
+
+    return response.json(serializedPost)
   }
 
   /**
@@ -149,7 +192,7 @@ export default class PostsController {
     }
 
     if (post.image) {
-      await drive.use('s3').delete(`posts/${post.image.split('/').pop()}`)
+      await MediaService.deleteByStoredValue(post.image)
     }
 
     await post.delete()
@@ -201,7 +244,9 @@ export default class PostsController {
     )
 
     await post.save()
-    return response.json(post)
+    const serializedPost = post.serialize()
+    await this.attachSignedPostImage(serializedPost)
+    return response.json(serializedPost)
   }
 
   /**
@@ -230,7 +275,9 @@ export default class PostsController {
 
     await existingLike.delete()
 
-    return response.json(post)
+    const serializedPost = post.serialize()
+    await this.attachSignedPostImage(serializedPost)
+    return response.json(serializedPost)
   }
 
   /**
@@ -256,7 +303,9 @@ export default class PostsController {
 
     await like.delete()
 
-    return response.json(post)
+    const serializedPost = post.serialize()
+    await this.attachSignedPostImage(serializedPost)
+    return response.json(serializedPost)
   }
 
   /**
@@ -458,8 +507,12 @@ export default class PostsController {
       })
       .preload('likes')
       .orderBy('createdAt', 'desc')
+    const serializedPosts = posts.map((post) => post.serialize())
+    const postsWithSignedImages = await Promise.all(
+      serializedPosts.map((post) => this.attachSignedPostImage(post))
+    )
 
-    return response.json(posts)
+    return response.json(postsWithSignedImages)
   }
 
   /**
@@ -479,8 +532,12 @@ export default class PostsController {
       })
       .preload('likes')
       .orderBy('createdAt', 'desc')
+    const serializedPosts = likedPosts.map((post) => post.serialize())
+    const postsWithSignedImages = await Promise.all(
+      serializedPosts.map((post) => this.attachSignedPostImage(post))
+    )
 
-    return response.json(likedPosts)
+    return response.json(postsWithSignedImages)
   }
 
   /**
@@ -507,13 +564,19 @@ export default class PostsController {
       .preload('comments')
       .orderBy('comments_count', 'desc')
       .limit(5)
+    const serializedMostLikedPosts = await Promise.all(
+      mostLikedPosts.map(async (post) => this.attachSignedPostImage(post.serialize()))
+    )
+    const serializedMostCommentedPosts = await Promise.all(
+      mostCommentedPosts.map(async (post) => this.attachSignedPostImage(post.serialize()))
+    )
 
     return response.json({
       totalPosts: totalPosts?.$extras.total || 0,
       totalLikes: totalLikes?.$extras.total || 0,
       totalComments: totalComments?.$extras.total || 0,
-      mostLikedPosts,
-      mostCommentedPosts,
+      mostLikedPosts: serializedMostLikedPosts,
+      mostCommentedPosts: serializedMostCommentedPosts,
     })
   }
 }

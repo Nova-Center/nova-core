@@ -1,6 +1,10 @@
 import env from '#start/env'
 import { defineConfig, services } from '@adonisjs/drive'
 
+const accessKeyId = env.get('AWS_ACCESS_KEY_ID') as string | undefined
+const secretAccessKey = env.get('AWS_SECRET_ACCESS_KEY') as string | undefined
+const endpoint = env.get('S3_ENDPOINT') as string | undefined
+
 const driveConfig = defineConfig({
   default: env.get('DRIVE_DISK') as 's3',
 
@@ -10,15 +14,12 @@ const driveConfig = defineConfig({
    */
   services: {
     s3: services.s3({
-      credentials: {
-        accessKeyId: env.get('AWS_ACCESS_KEY_ID') as string,
-        secretAccessKey: env.get('AWS_SECRET_ACCESS_KEY') as string,
-      },
+      credentials: accessKeyId && secretAccessKey ? { accessKeyId, secretAccessKey } : undefined,
       region: env.get('AWS_REGION') as string,
       bucket: env.get('S3_BUCKET') as string,
-      endpoint: env.get('S3_ENDPOINT') as string,
-      forcePathStyle: true,
-      visibility: 'public',
+      endpoint,
+      forcePathStyle: Boolean(endpoint),
+      visibility: 'private',
     }),
   },
 })

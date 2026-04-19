@@ -4,10 +4,10 @@ import User from '#models/user'
 import hash from '@adonisjs/core/services/hash'
 import { createAuthValidator } from '#validators/auth'
 import { loginValidator } from '#validators/login'
-import drive from '@adonisjs/drive/services/main'
 import { readFile } from 'node:fs/promises'
 import { v4 as uuid } from 'uuid'
 import { UserRole } from '../types/user_role.enum.js'
+import { MediaService } from '#services/media_service'
 
 export default class AuthController {
   /**
@@ -38,13 +38,11 @@ export default class AuthController {
 
     if (payload.avatar) {
       const fileName = `${uuid()}.${payload.avatar.extname}`
+      const objectKey = MediaService.buildObjectKey('users', fileName)
       const fileBuffer = await readFile(payload.avatar.tmpPath!)
-      await drive.use('s3').put(`users/${fileName}`, fileBuffer, {
-        contentType: payload.avatar.type,
-        visibility: 'public',
-      })
+      await MediaService.putPrivateObject(objectKey, fileBuffer, payload.avatar.type)
 
-      user.avatar = await drive.use('s3').getUrl(`users/${fileName}`)
+      user.avatar = objectKey
       logger.info({ avatar: user.avatar }, 'Avatar uploaded')
     } else {
       user.avatar = null
@@ -65,7 +63,9 @@ export default class AuthController {
     logger.info({ user }, 'User created')
 
     await user.save()
-    return response.created(user)
+    const serializedUser = user.serialize()
+    serializedUser.avatar = await MediaService.toResponseUrl(serializedUser.avatar)
+    return response.created(serializedUser)
   }
 
   /**
