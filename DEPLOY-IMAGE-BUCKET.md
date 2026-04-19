@@ -1,18 +1,19 @@
-# Deploy Private Presigned Images to S3 (ECS)
+# Deploy Private Presigned Images to S3 (ECS + Lambda)
 
-Ce guide décrit exactement les étapes pour déployer le backend avec des images **privées** sur S3 et des URLs **presignées** retournées par l'API.
+Ce guide decrit les etapes pour deployer le backend avec images privees sur S3 et URLs presignees.
 
-## 1) Prérequis
+## 1) Prerequis
 
-- Un bucket S3 existant (exemple: `cloud-nova-images`) dans la même région que ECS (recommandé).
-- Un repository ECR existant (exemple: `<ACCOUNT.ID>.dkr.ecr.eu-west-1.amazonaws.com/nova/core`).
-- Un cluster/service ECS Fargate existant derrière ALB.
-- Un rôle IAM utilisé comme **Task Role** (exemple: `ecsTaskRole`).
-- AWS CLI + Docker Desktop installés localement.
+- Bucket S3: `cloud-nova-images`
+- Repository ECR: `<ACCOUNT.ID>.dkr.ecr.eu-west-1.amazonaws.com/nova/core`
+- Service ECS Fargate derriere ALB
+- Role IAM ECS Task Role: `ecsTaskRole`
+- Lambda resizer + role d'execution: `nova-image-resizer-role-...`
+- AWS CLI + Docker Desktop
 
-## 2) Variables d'environnement nécessaires (ECS Task Definition)
+## 2) Variables d'environnement
 
-Configurer ces variables dans le conteneur ECS:
+### ECS (Task Definition)
 
 - `DRIVE_DISK=s3`
 - `AWS_REGION=eu-west-1`
@@ -20,51 +21,48 @@ Configurer ces variables dans le conteneur ECS:
 - `PORT=8080`
 - `HOST=0.0.0.0`
 
-Ne pas définir (ou laisser vide) en prod ECS avec Task Role IAM:
+Non definies en prod ECS:
 
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
-- `S3_ENDPOINT` (uniquement pour MinIO/LocalStack)
+- `S3_ENDPOINT`
 
-## 3) Configuration IAM (Task Role)
+### Lambda resizer
 
-Important: ajouter les permissions sur le **Task Role** (`ecsTaskRole`), pas sur `AWSServiceRoleForECS`.
+La lambda fournie (`S3Client({})`) utilise le role IAM et n'impose pas de variable obligatoire.
 
-Policy (uploads write + resized read-only):
+## 3) IAM - recapitulatif permissions
 
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "ListBucket",
-      "Effect": "Allow",
-      "Action": ["s3:ListBucket"],
-      "Resource": "arn:aws:s3:::cloud-nova-images"
-    },
-    {
-      "Sid": "UploadsWrite",
-      "Effect": "Allow",
-      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
-      "Resource": "arn:aws:s3:::cloud-nova-images/uploads/*"
-    },
-    {
-      "Sid": "ResizedReadOnly",
-      "Effect": "Allow",
-      "Action": ["s3:GetObject"],
-      "Resource": "arn:aws:s3:::cloud-nova-images/resized/*"
-    }
-  ]
-}
-```
+### ECS Task Role (`ecsTaskRole`)
 
-## 4) Configuration Bucket S3 (privé)
+- `s3:ListBucket` sur `cloud-nova-images`
+- `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject` sur `cloud-nova-images/uploads/*`
+- `s3:GetObject` sur `cloud-nova-images/resized/*`
+
+### Lambda execution role (`nova-image-resizer-role-...`)
+
+- `s3:GetObject` sur `cloud-nova-images/uploads/*`
+- `s3:PutObject` sur `cloud-nova-images/resized/*`
+- CloudWatch Logs (policy AWSLambdaBasicExecutionRole)
+
+### Lambda resource-based policy
+
+- Principal `s3.amazonaws.com`
+- Action `lambda:InvokeFunction`
+- SourceArn `arn:aws:s3:::cloud-nova-images`
+- SourceAccount `<ACCOUNT.ID>`
+
+## 4) Bucket S3
 
 - Bucket: `cloud-nova-images`
-- **Block Public Access: ON**
-- Pas de policy publique (`Principal: "*"` interdit)
+- Block Public Access: ON
+- Aucune policy publique
+- Notification d'evenement vers lambda:
+  - Event: `s3:ObjectCreated:Put`
+  - Prefix: `uploads/`
+  - Target: `nova-image-resizer`
 
-Policy de compartiment :
+Policy de compartiment:
 
 ```json
 {
@@ -110,60 +108,66 @@ Policy de compartiment :
 }
 ```
 
-## 5) Build et Push de l'image vers ECR
+## 5) Build et push image ECR
 
 ```bash
 aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin <ACCOUNT.ID>.dkr.ecr.eu-west-1.amazonaws.com
-
-docker build -t nova-core:private-s3 .
-docker tag nova-core:private-s3 <ACCOUNT.ID>.dkr.ecr.eu-west-1.amazonaws.com/nova/core:private-s3-v1
-docker push <ACCOUNT.ID>.dkr.ecr.eu-west-1.amazonaws.com/nova/core:private-s3-v1
+docker build --pull --no-cache -t nova-core:private-s3 .
+docker tag nova-core:private-s3 <ACCOUNT.ID>.dkr.ecr.eu-west-1.amazonaws.com/nova/core:private-s3-v5
+docker push <ACCOUNT.ID>.dkr.ecr.eu-west-1.amazonaws.com/nova/core:private-s3-v5
 ```
 
-Notes:
+## 6) Deploiement ECS
 
-- Le tag versionné (`private-s3-v1`, `private-s3-YYYYMMDD-HHMM`) est utilisé.
+1. Creer une nouvelle revision de Task Definition
+2. Mettre a jour:
+   - image `.../nova/core:private-s3-v5`
+   - port conteneur `8080/TCP`
+   - variables d'environnement
+   - `taskRoleArn=ecsTaskRole`
+3. Mettre a jour le service ECS
+4. Forcer un nouveau deploiement
 
-## 6) Mise à jour ECS
+## 7) Deploiement Lambda resizer
 
-1. Créer une nouvelle révision de Task Definition.
-2. Mettre à jour:
-   - Image conteneur vers `.../nova/core:private-s3-v1`
-   - Mapping port conteneur: `8080/TCP`
-   - Variables d'environnement listées plus haut
-   - `taskRoleArn` = rôle avec policy S3
-3. Mettre à jour le service ECS vers cette nouvelle révision.
-4. Forcer un nouveau déploiement.
+1. Deployer le code lambda
+2. Verifier le trigger S3 (`uploads/`, `s3:ObjectCreated:Put`)
+3. Verifier les permissions du role d'execution (lecture `uploads/*`, ecriture `resized/*`)
+4. Verifier la permission resource-based `lambda:InvokeFunction` pour S3
 
-## 7) Flow cible image (upload -> resize -> read)
+## 8) Flow image cible (upload -> resize -> read)
 
-1. Le backend upload dans `uploads/...` (privé), ex: `uploads/post-<uuid>.png`
-2. L'événement S3 déclenche la Lambda resizer
-3. La Lambda écrit l'image optimisée dans `resized/...`, ex: `resized/post-<uuid>.jpg`
-4. Lors d'un GET API, le backend:
-   - tente `resized/...`
-   - fallback `uploads/...` si le resized n'existe pas encore
-5. Le frontend reçoit toujours une URL presignée via le même champ (`image`/`avatar`)
+1. Le backend ecrit en prive sous `uploads/`, ex: `uploads/post-<uuid>.png`
+2. S3 declenche la lambda resizer
+3. La lambda ecrit en prive sous `resized/`, ex: `resized/post-<uuid>.jpg`
+4. Au GET API:
+   - lecture prioritaire `resized/...`
+   - fallback `uploads/...` si resized indisponible
+5. Le frontend lit toujours `image`/`avatar` avec URL presignee (TTL 15 min)
 
-## 8) Vérifications post-déploiement
+## 9) Verification post-deploiement
 
-1. Appeler un endpoint d'upload (avatar/post/event/shop item).
-2. Vérifier dans S3 que l'objet est créé.
-3. Vérifier que l'API renvoie une URL contenant `X-Amz-Signature` et `X-Amz-Expires=900`.
-4. Vérifier qu'une URL S3 non signée retourne `403 AccessDenied`.
-5. Attendre expiration (~15 min), vérifier que l'ancienne URL échoue, puis refetch API pour obtenir une nouvelle URL.
+1. Upload via endpoint API
+2. Verification objet source dans `uploads/`
+3. Verification objet transforme dans `resized/`
+4. Verification URL presignee (`X-Amz-Signature`, `X-Amz-Expires=900`)
+5. Verification acces direct non signe -> `403 AccessDenied`
+6. Verification expiration (~15 min) puis refetch API
 
-## 9) Dépannage rapide
+## 10) Depannage rapide
 
-- `AccessDenied` sur upload:
-  - vérifier que la policy est sur le **Task Role**
-  - vérifier `S3_BUCKET` et `AWS_REGION`
-  - vérifier que le service ECS tourne bien avec la nouvelle révision
+- `AccessDenied` upload:
+  - verifier policy sur `ecsTaskRole`
+  - verifier `S3_BUCKET`, `AWS_REGION`
+  - verifier revision ECS active
 
-- Le conteneur ne démarre pas:
-  - vérifier `PORT=8080` et mapping port 8080 dans ECS
-  - vérifier logs CloudWatch
+- `AccessDenied` lambda:
+  - verifier role `nova-image-resizer-role-...` (Get uploads / Put resized)
+  - verifier policy bucket et trigger S3
 
-- Push Docker impossible:
-  - démarrer Docker Desktop (daemon actif)
-  - relancer login ECR puis build/tag/push
+- Pas de fichier dans `resized/`:
+  - verifier trigger prefix `uploads/`
+  - verifier logs CloudWatch `/aws/lambda/nova-image-resizer`
+
+- Meme digest ECR sur plusieurs tags:
+  - rebuild avec `--pull --no-cache`
