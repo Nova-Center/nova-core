@@ -1,5 +1,4 @@
-![img.png](docs/deploygram.png)
-
+![img.png](docs/deploygramV2.png)
 # Deploy Private Presigned Images to S3 (ECS + Lambda)
 
 Cette partie decrit les etapes pour deployer le backend avec images privees sur S3 et URLs presignees.
