@@ -116,8 +116,8 @@ export class MediaService {
     }
 
     const fileName = key.slice(this.ROOT_UPLOAD_PREFIX.length)
-    const withoutExtension = fileName.replace(/\.[^.]+$/, '')
-    return `resized/${withoutExtension}.jpg`
+    // const withoutExtension = fileName.replace(/\.[^.]+$/, '')
+    return `resized/${fileName}`
   }
 
   private static toFilePrefix(prefix: string): string {
